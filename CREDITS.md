@@ -37,3 +37,9 @@ A photograph under CC0 or in the public domain needs no credit, but is worth rec
 ## Fonts
 
 The gallery's posters name fonts; none are bundled with the package. rhp itself ships no fonts, images or other media: `files: ["dist"]` in package.json publishes only the built library.
+
+## CodeMirror, in the web examples' editor
+
+`web/examples/vendor/codemirror.js` — CodeMirror 6 (codemirror 6.0.2, @codemirror/view 6.43.14, @codemirror/state 6.7.6, @codemirror/lang-html 6.4.12, @codemirror/lang-javascript 6.2.5, @codemirror/theme-one-dark 6.1.3, @codemirror/merge 6.12.2), bundled into one file with esbuild from `web/examples/vendor/codemirror.entry.js`.
+
+MIT License, Copyright (C) 2018-2021 by Marijn Haverbeke and others: <https://codemirror.net>. The licence text is at the top of the file.

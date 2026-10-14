@@ -20,6 +20,7 @@ Anywhere else the package picks a ready build: one for browsers, and one for Nod
 
 - **No build step:** import `@bezda/rhp/standalone` from a CDN, one module with Solid included (36 kB gzipped); [Install](https://rhp.vercel.app/start/install/#in-a-plain-html-page) shows a whole page.
 - **React:** `@bezda/rhp-react`, in [`react/`](react/), turns an rhp chart into a React component.
+- **Web components:** `@shashank1010/rhp-web`, in [`web/`](web/), draws charts written as markup (`<rhp-chart>`, `<rhp-plot>`) with slats defined in JS by `slat()`.
 
 ## Example
 
@@ -96,7 +97,9 @@ npm test                  # builds the test pages and checks them in Chromium
 | `npm run build` | writes `dist/` |
 | `npm test` | checks the types with `tsc`, then the test pages in Chromium with Playwright. `BROWSER=webkit` or `BROWSER=firefox` runs them in that engine; CI runs all three on every pull request and on `master`. |
 | `npm run gallery` | `examples/gallery/out/slat-gallery.html`, a page of plots the tests also check |
+| `web/examples/` | pages that use the web components, from markup to React: see [`web/examples/README.md`](web/examples/README.md) (`npm run examples` in `web/`, then `npx serve web/examples`) |
 | `bench/` | rhp against eleven other chart libraries: see [`bench/README.md`](bench/README.md) |
+| `web/` | `@shashank1010/rhp-web`, the web components: see [`web/README.md`](web/README.md). The root `npm test` checks it; `npm run build` in `web/` writes its `dist/` |
 
 The code:
 
@@ -116,9 +119,9 @@ The AI kit has its own checks: `npm install` and `npm test` in `mcp/` run the ch
 
 ### Releasing
 
-1. Set the new version in `package.json` and `react/package.json` (and the `@bezda/rhp` version that `react/` depends on).
+1. Set the new version in `package.json`, `react/package.json` and `web/package.json` (and the `@bezda/rhp` version that `react/` and `web/` depend on).
 2. Run `npm test`, `BROWSER=webkit npm test` and `BROWSER=firefox npm test`.
-3. `npm publish`, then `npm publish` in `react/` (each builds first).
+3. `npm publish`, then `npm publish` in `react/` and in `web/` (each builds first; `web/` writes `dist/rhp-web.js` from rhp's source at that commit).
 4. In `mcp/`, publish the checker with the new rhp ("Publishing" in [mcp/README.md](mcp/README.md)), so it checks charts against the rhp that jsDelivr now serves.
 5. In [rhp-documentation](https://github.com/bezda-team/rhp-documentation), `npm run sync-rhp` takes the new build for the website, and `npm run sync-skill` the skill.
 
