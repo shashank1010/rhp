@@ -6,9 +6,10 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { execFileSync } from "child_process";
 import { chromium, webkit, firefox } from "playwright";
-import { page as bundle, standalone, ssrServer, ssrClient, ssrPackage } from "../scripts/bundle.mjs";
+import { page as bundle, standalone, ssrServer, ssrClient, ssrPackage, jsx, cssText } from "../scripts/bundle.mjs";
 import { build } from "esbuild";
 import { runDevChecks } from "./vite/dev.mjs";
+import { buildWeb } from "../web/scripts/build.mjs";
 const here = path.dirname(fileURLToPath(import.meta.url)), at = (f) => path.join(here, f);
 fs.mkdirSync(at("out"), { recursive: true });
 for (const t of ["core", "cost", "mount", "edges"]) {
@@ -19,6 +20,12 @@ await standalone(path.join(here, "../src/standalone.js"), at("out/standalone.js"
 await build({ entryPoints: [at("react.js")], outfile: at("out/react.js"), bundle: true, format: "iife", minify: true, logLevel: "warning",
   alias: { "@bezda/rhp/standalone": at("out/standalone.js") }, define: { "process.env.NODE_ENV": '"production"' } });
 fs.writeFileSync(at("out/react.html"), '<!doctype html><html><head><meta charset=utf-8></head><body><script src="react.js"></script></body></html>');
+// The web components (web/), built from rhp's src with the one Solid in node_modules
+await build({ entryPoints: [at("web.js")], outfile: at("out/web.js"), bundle: true, format: "iife", platform: "browser", target: "es2020", logLevel: "warning",
+  alias: { "@bezda/rhp": path.join(here, "../src/index.js") }, plugins: [jsx(), cssText], define: { "process.env.NODE_ENV": '"production"' } });
+fs.writeFileSync(at("out/web.html"), '<!doctype html><html><head><meta charset=utf-8></head><body><script src="web.js"></script></body></html>');
+// The web components' CDN module (web/dist/rhp-web.js, with dist/posters.css), as web/scripts/build.mjs writes it
+await buildWeb(at("out"));
 // The server rendering app (test/ssr.jsx), built from src and from the published package
 await ssrServer(at("ssr-server.jsx"), at("out/ssr-server.mjs"));
 await ssrClient(at("ssr-client.jsx"), at("out/ssr-client.js"));
@@ -53,7 +60,7 @@ const check = (name, got, want) => {
 };
 
 // The types: apps written against rhp's declarations (test/types) compile, and what they mark as errors are errors
-for (const [name, config] of [["rhp's", "tsconfig.json"], ["@bezda/rhp-react's", "tsconfig.react.json"]]) {
+for (const [name, config] of [["rhp's", "tsconfig.json"], ["@bezda/rhp-react's", "tsconfig.react.json"], ["@shashank1010/rhp-web's", "tsconfig.web.json"]]) {
   let out = "";
   try {
     execFileSync(path.join(here, "../node_modules/.bin/tsc"), ["-p", at("types/" + config)], { encoding: "utf8" });
@@ -444,6 +451,1090 @@ const open = async (url, opts = {}) => {
   check("react: unmounting removes the chart", await p.evaluate(() => { T.hide(); return [document.querySelectorAll(".rhp-chart").length, !!document.getElementById("gone")]; }), [0, true]);
   check("no page errors", p.errors, []);
   await p.close();
+}
+
+// Web components with @shashank1010/rhp-web (test/web.js)
+{
+  const p = await open("file://" + at("out/web.html"));
+  const frame = () => p.evaluate(() => new Promise((r) => requestAnimationFrame(() => setTimeout(r))));
+  const bars = (sel = "#c1") => p.evaluate((sel) => [...document.querySelectorAll(sel + " fruit-row")].map((r) => r.dataset.fruit + ":" + r.querySelector(".rhp-bar").style.getPropertyValue("--rhp-to")).join(" "), sel);
+  const tags = (sel) => p.evaluate((sel) => [...document.querySelectorAll(sel)].map((pl) => [...pl.children].map((r) => r.localName).join(",")), sel);
+  check("web: each <rhp-chart> draws one .rhp-chart inside itself, with no shadow root", await p.evaluate(() => [...document.querySelectorAll("rhp-chart")].map((c) => [c.querySelectorAll(":scope > .rhp-chart").length, c.shadowRoot === null, c.chart === c.querySelector(":scope > .rhp-chart"), T.isChart(c)])), [[1, true, true, true], [1, true, true, true]]);
+  check("web: the description elements stay in the light DOM, hidden", await p.evaluate(() => { const pl = document.querySelector("#p1"); return [pl.parentNode.id, pl.hidden, getComputedStyle(pl).display, !!pl.querySelector("template")]; }), ["c1", true, "none", true]);
+  check("web: the rows are the slat's elements, stacked by the Plot", await p.evaluate(() => [...document.querySelectorAll("#c1 .rhp-plot > *")].map((r) => [r.localName, !!r.dataset.rhpSlat, r.style.getPropertyValue("--rhp-position"), r.className, typeof r.$row]).concat([document.querySelector("#p1").plot === document.querySelector("#c1 .rhp-plot")])),
+    [["fruit-row", true, "0", "row", "function"], ["fruit-row", true, "1", "row", "function"], ["fruit-row", true, "2", "row", "function"], true]);
+  check("web: attributes are coerced (JSON, numbers, false, kebab-case to camelCase, a JSON column)", await p.evaluate(() => {
+    const c1 = document.querySelector("#c1"), c2 = document.querySelector("#c2");
+    return [[...c1.scale], c1.crossTicks, c2.height, c2.chart.dataset.rhpO, c1.chart.getAttribute("role"), [...document.querySelectorAll("#c1 fruit-row")].map((r) => r.dataset.price).join(" ")];
+  }), [[0, 30], false, 120, "v", "figure", "1.5 2 3"]);
+  check("web: the slat's thickness, and an override on the slat element in the template", await p.evaluate(() => ["#c1", "#c2"].map((s) => document.querySelector(s + " .rhp-plot").style.getPropertyValue("--rhp-pitch"))), ["32px", "20px"]);
+  check("web: the data reaches the rows", await bars(), "Apples:12 Bananas:18 Cherries:7");
+  const writes = await p.evaluate(async () => {
+    const bars = [...document.querySelectorAll("#c1 .rhp-bar")], seen = [];
+    const mo = new MutationObserver((ms) => ms.forEach((m) => seen.push(m.target.closest("fruit-row").dataset.fruit)));
+    document.querySelectorAll("#c1 fruit-row").forEach((r) => mo.observe(r, { attributes: true, subtree: true, attributeFilter: ["style"] }));
+    T.setSold([12, 25, 7]);
+    await new Promise((r) => requestAnimationFrame(() => setTimeout(r)));
+    mo.disconnect();
+    return { same: bars.every((b, i) => b === document.querySelectorAll("#c1 .rhp-bar")[i]), rows: [...new Set(seen)] };
+  });
+  check("web: a new number set as a property moves its bar only, and no element is made again", [await bars(), writes], ["Apples:12 Bananas:25 Cherries:7", { same: true, rows: ["Bananas"] }]);
+  await p.evaluate(() => { T.setAttr("#c1", "scale", "[0, 50]"); T.setAttr("#p1", "unit-price", "[1.5, 4, 3]"); }); await frame(); await frame();
+  check("web: attribute changes on <rhp-chart> (scale) and <rhp-plot> (a JSON column) update the chart", await p.evaluate(() => [document.querySelector("#c1 .rhp-chart").style.getPropertyValue("--rhp-max"), [...document.querySelectorAll("#c1 fruit-row")].map((r) => r.dataset.price).join(" ")]), ["50", "1.5 4 3"]);
+  await p.evaluate(() => T.setAttr("#p1", "sold", "[12, 25, 9]")); await frame();
+  check("web: a property wins over its attribute", await bars(), "Apples:12 Bananas:25 Cherries:7");
+  await p.evaluate(() => (document.querySelector("#p1").sold = undefined)); await frame();
+  check("web: removing the property brings back the attribute's value", await bars(), "Apples:12 Bananas:25 Cherries:9");
+
+  // Structural changes: what rhp's Plot reads once makes that Plot again
+  const keep = () => p.evaluate(() => { window.kept = document.querySelector('#c1 fruit-row[data-fruit="Apples"]'); window.keptC2 = document.querySelector("#c2 .rhp-plot"); });
+  const kept = () => p.evaluate(() => [window.kept === document.querySelector('#c1 fruit-row[data-fruit="Apples"]'), window.keptC2 === document.querySelector("#c2 .rhp-plot")]);
+  await keep();
+  await p.evaluate(() => document.querySelector("#p1").set("extra", ["x", "y", "z"])); await frame();
+  check("web: a new data group with set() makes that Plot again (and no other), and gets a property", [await p.evaluate(() => [[...document.querySelectorAll("#c1 fruit-row")].map((r) => r.dataset.extra).join(" "), [...document.querySelector("#p1").extra]]), await kept()], [["x y z", ["x", "y", "z"]], [false, true]]);
+  await p.evaluate(() => T.swapSlat("plain-row")); await frame();
+  check("web: .slat (a tag) replaces the template's slat", await tags("#c1 .rhp-plot"), ["plain-row,plain-row,plain-row"]);
+  await p.evaluate(() => T.swapSlat(undefined)); await frame();
+  check("web: without .slat, the template's slat again", [await tags("#c1 .rhp-plot"), await bars()], [["fruit-row,fruit-row,fruit-row"], "Apples:12 Bananas:25 Cherries:9"]);
+  await p.evaluate(() => T.swapSlat("fn")); await frame();
+  check("web: .slat (a slat function from slat())", await tags("#c1 .rhp-plot"), ["plain-row,plain-row,plain-row"]);
+  await p.evaluate(() => T.swapSlat(undefined)); await frame();
+  await p.evaluate(() => T.addPlot()); await frame();
+  check("web: an <rhp-plot> added (made with createElement, with properties) draws a Plot after the first", [await tags("#c1 .rhp-plot"), await p.evaluate(() => [...document.querySelectorAll("#c1 .plain")].map((b) => b.style.getPropertyValue("--rhp-to")).join(" "))], [["fruit-row,fruit-row,fruit-row", "plain-row,plain-row,plain-row"], "5 10 15"]);
+  check("web: a slat's CSS applies inside its own plot only", await p.evaluate(() => [getComputedStyle(document.querySelector("#c1 fruit-row .rhp-bar")).opacity, getComputedStyle(document.querySelector("#c1 plain-row .rhp-bar")).opacity]), ["0.5", "1"]);
+  await p.evaluate(() => { window.p2plot = document.querySelector("#p2").plot; const c1 = document.querySelector("#c1"); c1.insertBefore(document.querySelector("#p2"), document.querySelector("#p1")); }); await frame();
+  check("web: reordering the <rhp-plot> elements moves their Plots, which are not made again", [await tags("#c1 .rhp-plot"), await p.evaluate(() => window.p2plot === document.querySelector("#c1 .rhp-plot"))], [["plain-row,plain-row,plain-row", "fruit-row,fruit-row,fruit-row"], true]);
+  await p.evaluate(() => T.removePlot()); await frame();
+  check("web: removing an <rhp-plot> removes its Plot", await tags("#c1 .rhp-plot"), ["fruit-row,fruit-row,fruit-row"]);
+  await keep();
+  await p.evaluate(() => T.setAttr("#p1", "static", "")); await frame();
+  check("web: static toggled on makes the Plot again, drawn once", [await kept(), await bars()], [[false, true], "Apples:12 Bananas:25 Cherries:9"]);
+  await p.evaluate(() => { T.setAttr("#p1", "static", null); }); await frame();
+  await p.evaluate(() => T.setSold([20, 25, 9])); await frame(); await frame();
+  check("web: static toggled off, the rows follow the data again", await bars(), "Apples:20 Bananas:25 Cherries:9");
+
+  // Slat CSS: one sheet per slat type, shared and counted
+  const sheets = () => p.evaluate(() => document.adoptedStyleSheets.length);
+  const n0 = await sheets();
+  await p.evaluate(() => (customElements.get("fruit-row").css = ".rhp-bar { opacity: .25 }"));
+  check("web: setting the slat class's css restyles its slats in place, and adds no sheet", [await p.evaluate(() => getComputedStyle(document.querySelector("#c1 fruit-row .rhp-bar")).opacity), (await sheets()) - n0], ["0.25", 0]);
+  check("web: 20 mounts and unmounts of a chart draw it each time and leave no sheet behind", await p.evaluate(() => T.cycles(20)), { drawn: true, added: 0 });
+
+  // Lifecycle
+  await p.evaluate(() => { window.c2chart = document.querySelector("#c2").chart; document.body.appendChild(document.createElement("section")).appendChild(document.querySelector("#c2")); }); await frame();
+  check("web: a chart moved in the page keeps its rendered chart", await p.evaluate(() => [document.querySelector("#c2").chart === window.c2chart, window.c2chart.isConnected]), [true, true]);
+  await p.evaluate(() => { window.c1 = document.querySelector("#c1"); T.hide(); }); await frame();
+  check("web: a chart taken out of the page is disposed, and keeps its description", await p.evaluate(() => [window.c1.querySelector(".rhp-chart"), window.c1.chart, window.c1.querySelector("#p1")?.localName]), [null, null, "rhp-plot"]);
+  await p.evaluate(() => document.querySelector("#box").appendChild(window.c1)); await frame();
+  check("web: put back, it draws again", [await p.evaluate(() => document.querySelectorAll("#c1 > .rhp-chart").length), await bars()], [1, "Apples:20 Bananas:25 Cherries:9"]);
+
+  // Scale, Axis and Theme (<rhp-scale>, <rhp-axis>, <rhp-theme>; hooks in test/web.js under "Scale, Axis and Theme")
+  await p.evaluate(() => T.startSat()); await frame(); await frame();
+  check("web: <rhp-scale> draws a Scale with its tick slat: d has at, next, first and last, and toEnd is finite once measured", await p.evaluate(() => {
+    const ticks = T.ticks(), toEnd = ticks.map((t) => Number(t[4]));
+    return [ticks.map((t) => t.slice(0, 4)), toEnd.every(Number.isFinite), toEnd[0] > toEnd[1] && toEnd[1] > toEnd[2] && toEnd[2] > 0, toEnd[3]];
+  }), [[["0", "10", "true", "false"], ["10", "20", "false", "false"], ["20", "30", "false", "false"], ["30", "30", "false", "true"]], true, true, 0]);
+  check("web: <rhp-scale> is hidden, takes class, gives .plot, and the chart draws no axis of its own", await p.evaluate(() => T.scaleState()), { cls: "rhp-plot rhp-scale my-scale", plot: true, axes: 0, hidden: true });
+  await p.evaluate(() => { T.satAttr("#sc1", "ticks", "every:15"); T.satAttr("#sc1", "class", "other"); }); await frame(); await frame();
+  check("web: <rhp-scale> ticks (a named helper) and class follow their attributes", await p.evaluate(() => [T.ticks().map((t) => t[0]).join(" "), T.scaleState().cls]), ["0 15 30", "rhp-plot rhp-scale other"]);
+  await p.evaluate(() => T.satSet("#sc1", "slat", T.TickDot)); await frame();
+  check("web: <rhp-scale> .slat (a slat function) replaces its template's slat", await p.evaluate(() => [...document.querySelectorAll("#s1 .rhp-scale > *")].map((r) => r.localName + ":" + r.textContent).join(" ")), "tick-dot:|0 tick-dot:|15 tick-dot:|30");
+  await p.evaluate(() => T.satSet("#sc1", "slat", undefined)); await frame();
+  await p.evaluate(() => document.querySelector("#sc1").remove()); await frame();
+  check("web: <rhp-scale> removed, its ticks go and the chart draws its own axis again", await p.evaluate(() => [T.ticks(), T.scaleState().axes]), [[], 1]);
+
+  check("web: <rhp-axis ticks=\"[0, 5, 10]\"> draws an axis with those numbers (the chart's own has ticks=\"false\")", await p.evaluate(() => T.axisNumbers()), ["0 5 10"]);
+  await p.evaluate(() => T.satSet("#ax1", "format", (v) => v + "%")); await frame();
+  check("web: <rhp-axis> takes format as a property", await p.evaluate(() => T.axisNumbers()), ["0% 5% 10%"]);
+  await p.evaluate(() => T.satAttr("#ax1", "ticks", "every:2")); await frame();
+  const every2 = await p.evaluate(() => T.axisNumbers());
+  await p.evaluate(() => T.satAttr("#a1", "scale", "[0, 4]")); await frame();
+  check("web: <rhp-axis ticks=\"every:2\"> follows the chart's scale", [every2, await p.evaluate(() => T.axisNumbers())], [["0% 2% 4% 6% 8% 10%"], ["0% 2% 4%"]]);
+  const setThrows = (key, v) => p.evaluate(([key, v]) => { try { T.satSet("#ax1", key, T[v]); return null; } catch (e) { return e.message; } }, [key, v]);
+  const thrown = await setThrows("ticks", "badTicks"); await frame();
+  check("web: <rhp-axis> a ticks function that throws is reported (the setter does not throw), the axis draws no ticks, and the chart keeps drawing", [thrown, p.errors.splice(0), await p.evaluate(() => T.axisNumbers()), await p.evaluate(() => T.rows("#a1"))], [null, ["bad ticks"], [""], 2]);
+  await p.evaluate(() => T.satSet("#ax1", "ticks", [0, 2, 4])); await frame();
+  check("web: <rhp-axis> given good ticks again, it draws them", [await p.evaluate(() => T.axisNumbers()), p.errors], [["0% 2% 4%"], []]);
+  const thrownFormat = await setThrows("format", "badFormat"); await frame();
+  check("web: <rhp-axis> a format that throws is reported, only the axis is left out, and the chart keeps drawing", [thrownFormat, p.errors.splice(0), await p.evaluate(() => T.axisNumbers()), await p.evaluate(() => T.rows("#a1"))], [null, ["bad format"], [], 2]);
+  await p.evaluate(() => T.satSet("#ax1", "format", (v) => v + "!")); await frame();
+  check("web: <rhp-axis> given a good format again, it draws again", [await p.evaluate(() => T.axisNumbers()), p.errors], [["0! 2! 4!"], []]);
+  await p.evaluate(() => T.axisEarly()); await frame();
+  check("web: <rhp-axis> whose ticks throw when its chart builds: reported, and the chart and its rows still draw", [p.errors.splice(0), await p.evaluate(() => [document.querySelectorAll("#a2 > .rhp-chart").length, T.rows("#a2"), T.axisNumbers("#a2")])], [["bad ticks"], [1, 2, [""]]]);
+  await p.evaluate(() => document.querySelector("#a2").remove());
+
+  check("web: <rhp-theme> keys reach every chart below it (at any depth), and nested themes merge outer to inner", await p.evaluate(() => ["#t1", "#t2", "#t3"].map((s) => T.themeVars(s)).concat([T.themeVars("#s1")])),
+    [["#112233", "#ff0000", "#00ff00", "#6b7280"], ["#112233", "#ff0000", "#00ff00", "#6b7280"], ["#abcdef", "#ff0000", "#00ff00", "#445566"], ["#1d232b", "#2a78d6", "#eb6834", "#6b7280"]]);
+  check("web: a theme's series color draws the bars, and <rhp-theme> stays visible and draws nothing itself", await p.evaluate(() => [T.barColor("#t1"), T.barColor("#t3"), T.themeEl("#th1"), T.themeEl("#th2")]),
+    ["rgb(0, 255, 0)", "rgb(0, 255, 0)", { hidden: false, children: 0, value: { series: ["#ff0000", "#00ff00"], ink: "#112233" } }, { hidden: false, children: 0, value: { muted: "#445566", ink: "#abcdef" } }]);
+  await p.evaluate(() => { window.keptBar = document.querySelector("#t1 .rhp-bar"); T.satAttr("#th1", "ink", "#445500"); T.satAttr("#th1", "series", '["#0000ff", "#ffff00"]'); }); await frame();
+  check("web: a theme attribute changed updates the charts below it (the inner theme's own ink still wins), and makes no element again", await p.evaluate(() => ["#t1", "#t2", "#t3"].map((s) => T.themeVars(s)).concat([window.keptBar === document.querySelector("#t1 .rhp-bar")])),
+    [["#445500", "#0000ff", "#ffff00", "#6b7280"], ["#445500", "#0000ff", "#ffff00", "#6b7280"], ["#abcdef", "#0000ff", "#ffff00", "#445566"], true]);
+  await p.evaluate(() => T.satSet("#th1", "value", { muted: "#999999", ink: "#ffffff" })); await frame();
+  const withValue = await p.evaluate(() => T.themeVars("#t1"));
+  await p.evaluate(() => T.satAttr("#th1", "ink", null)); await frame();
+  check("web: <rhp-theme> .value gives keys, a key's own attribute wins over it, and removing it brings back value's", [withValue, await p.evaluate(() => T.themeVars("#t1"))], [["#445500", "#0000ff", "#ffff00", "#999999"], ["#ffffff", "#0000ff", "#ffff00", "#999999"]]);
+  await p.evaluate(() => T.moveChart("#t2", "#th3")); await frame();
+  const moved = await p.evaluate(() => T.themeVars("#t2"));
+  await p.evaluate(() => T.moveChart("#t2", "#sat")); await frame();
+  check("web: a chart moved under another theme reads that one, and out of any theme the defaults", [moved, await p.evaluate(() => T.themeVars("#t2"))], [["#010203", "#2a78d6", "#eb6834", "#6b7280"], ["#1d232b", "#2a78d6", "#eb6834", "#6b7280"]]);
+  check("no page errors", p.errors, []);
+  await p.close();
+}
+
+// Web components defined by a classic script in <head>, while the page is still loading, and elements made with
+// createElement and given properties before the elements were defined
+{
+  const p = await newPage();
+  p.errors = []; p.on("pageerror", (e) => p.errors.push(e.message));
+  await p.route("http://rhp.test/**", (r) => {
+    const f = new URL(r.request().url()).pathname.slice(1);
+    if (f === "web.js") return r.fulfill({ path: at("out/web.js"), contentType: "text/javascript" });
+    r.fulfill({ contentType: "text/html", body: `<!doctype html><html><head><meta charset="utf-8">
+      <script>
+        window.early = document.createElement("rhp-chart");
+        early.scale = [0, 10];
+        const plot = document.createElement("rhp-plot");
+        plot.name = ["X", "Y"]; plot.sold = [5, 6]; plot.slat = "fruit-row";
+        early.append(plot);
+      </script>
+      <script src="web.js"></script></head>
+      <body><rhp-chart id="h1" scale="[0, 30]"><rhp-plot name='["A", "B", "C"]' sold="[1, 2, 3]"><template><fruit-row></fruit-row></template></rhp-plot></rhp-chart></body></html>` });
+  });
+  await p.goto("http://rhp.test/index.html"); await p.waitForTimeout(400);
+  const rows = (sel) => p.evaluate((sel) => [...document.querySelectorAll(sel + " fruit-row")].map((r) => r.dataset.fruit + ":" + r.querySelector(".rhp-bar").style.getPropertyValue("--rhp-to")).join(" "), sel);
+  check("web: defined by a classic script in <head> while the page loads, a chart in the markup draws all its rows", [await p.evaluate(() => T.readyAtDefine), await rows("#h1")], ["loading", "A:1 B:2 C:3"]);
+  await p.evaluate(() => { early.id = "early"; document.body.append(early); });
+  await p.waitForTimeout(100);
+  check("web: properties set before the elements were defined are taken in when they connect", [await rows("#early"), await p.evaluate(() => [Object.keys(early), Object.keys(early.querySelector("rhp-plot")), [...early.scale]])], ["X:5 Y:6", [[], [], [0, 10]]]);
+  check("no page errors", p.errors, []);
+  await p.close();
+}
+
+// Web components: an invalid description is reported and leaves the rest of its chart working, data given by property
+// is copied, .plot follows the Plot, and properties are taken in on the first connect only
+{
+  const p = await open("file://" + at("out/web.html"));
+  const frame = () => p.evaluate(() => new Promise((r) => requestAnimationFrame(() => setTimeout(r))));
+  const values = (sel) => p.evaluate((sel) => [...document.querySelectorAll(sel + " .plain")].map((b) => b.style.getPropertyValue("--rhp-to")).join(" "), sel);
+  const plots = (sel) => p.evaluate((sel) => document.querySelectorAll(sel + " .rhp-plot").length, sel);
+  await p.evaluate(() => {
+    document.querySelector("#box").remove();
+    document.body.insertAdjacentHTML("beforeend", `<rhp-chart id="e1" scale="[0, 30]">
+      <rhp-plot id="ea" value="[1, 2]"><template><plain-row></plain-row></template></rhp-plot>
+      <rhp-plot id="eq" value="[3, 4]"><template><plain-row></plain-row></template></rhp-plot>
+    </rhp-chart>`);
+  });
+  await frame();
+  check("web errors: two plots drawn", [await plots("#e1"), await values("#e1")], [2, "1 2 3 4"]);
+  p.errors = [];
+  await p.evaluate(() => (document.querySelector("#ea").innerHTML = "<template><div></div><div></div></template>")); await frame();
+  check("web errors: a template holding two elements is reported, and only that plot is left out", [p.errors.map((e) => /holds 2 elements/.test(e)), await plots("#e1"), await values("#e1")], [[true], 1, "3 4"]);
+  p.errors = [];
+  await p.evaluate(() => (document.querySelector("#ea").innerHTML = "<template><plain-row></plain-row></template>")); await frame();
+  await p.evaluate(() => (document.querySelector("#eq").innerHTML = "")); await frame();
+  check("web errors: fixed, it draws again, and the chart still follows its other plots", [await plots("#e1"), await values("#e1"), p.errors], [1, "1 2", []]);
+  await p.evaluate(() => document.querySelector("#e1").insertAdjacentHTML("beforeend", `<rhp-plot id="bad" value="[9]"><template><div class="div-row"></div></template></rhp-plot>`)); await frame();
+  check("web errors: a template whose root is a plain element (<div>) is valid: its plot draws a <div> per row", [p.errors, await plots("#e1"), await p.evaluate(() => document.querySelectorAll("#e1 .rhp-plot > div.div-row").length)], [[], 2, 1]);
+  p.errors = [];
+  await p.evaluate(() => {
+    document.querySelector("#bad").remove();
+    const q = document.createElement("rhp-plot");
+    q.id = "later"; q.value = [7, 8]; q.slat = "later-row";
+    document.querySelector("#e1").append(q);
+  });
+  await frame();
+  check("web errors: after it, plots added and removed still follow, and .slat naming a tag not defined yet waits for it", [await plots("#e1"), await values("#e1"), p.errors], [1, "1 2", []]);
+  await p.evaluate(() => T.slat("later-row", (d) => T.h(T.Bar, { class: "plain", to: () => d.value }))); await frame();
+  check("web errors: once the tag is defined, that plot draws", [await plots("#e1"), await values("#e1"), p.errors], [2, "1 2 7 8", []]);
+
+  // A chart whose first build fails (a slat throwing) is reported, can be removed, and draws once fixed
+  await p.evaluate(() => {
+    T.slat("boom-row", () => { throw new Error("boom"); });
+    document.body.insertAdjacentHTML("beforeend", `<rhp-chart id="e2"><rhp-plot id="eb" value="[1]"><template><boom-row></boom-row></template></rhp-plot><rhp-plot value="[5]"><template><plain-row></plain-row></template></rhp-plot></rhp-chart>`);
+  });
+  await frame();
+  check("web errors: a slat that throws is reported and only its plot is left out", [p.errors, await plots("#e2"), await values("#e2")], [["boom"], 1, "5"]);
+  p.errors = [];
+  await p.evaluate(() => (document.querySelector("#eb").innerHTML = "<template><plain-row></plain-row></template>")); await frame();
+  check("web errors: fixed, that plot draws", [await plots("#e2"), await values("#e2")], [2, "1 5"]);
+  await p.evaluate(() => { window.e2 = document.querySelector("#e2"); e2.remove(); }); await frame();
+  await p.evaluate(() => document.body.append(e2)); await frame();
+  check("web errors: removed and put back, it draws again", [await plots("#e2"), await values("#e2"), p.errors], [2, "1 5", []]);
+
+  // An error outside the plots (here the chart's ref throwing) leaves the chart undrawn, without breaking it
+  p.errors = [];
+  const failed = await p.evaluate(async () => {
+    const tick = () => new Promise((r) => requestAnimationFrame(() => setTimeout(r)));
+    const c = document.createElement("rhp-chart");
+    c.id = "e4"; c.ref = () => { throw new Error("chart ref"); };
+    c.innerHTML = `<rhp-plot value="[4]"><template><plain-row></plain-row></template></rhp-plot><span id="e4s">note</span>`;
+    document.body.append(c); await tick();
+    const out = [c.querySelectorAll(".rhp-chart").length, c.chart, document.querySelector("#e4s")?.parentNode === c];
+    c.remove(); await tick();
+    c.ref = undefined;
+    document.body.append(c); await tick();
+    out.push(c.querySelectorAll(":scope > .rhp-chart .plain").length);
+    return out;
+  });
+  check("web errors: a chart whose build throws is reported, draws nothing, keeps its children, and draws once fixed and put back", [failed, p.errors], [[0, null, true, 1], ["chart ref"]]);
+  p.errors = [];
+
+  // Data given by property is copied
+  const data = await p.evaluate(async () => {
+    const tick = () => new Promise((r) => requestAnimationFrame(() => setTimeout(r)));
+    const read = () => [...document.querySelectorAll("#e3 .plain")].map((b) => b.style.getPropertyValue("--rhp-to")).join(" ");
+    document.body.insertAdjacentHTML("beforeend", `<rhp-chart id="e3" scale="[0, 100]"></rhp-chart>`);
+    const arr = [5, 10, 15];
+    const pl = document.createElement("rhp-plot");
+    pl.value = arr; pl.slat = "plain-row";
+    document.querySelector("#e3").append(pl);
+    await tick();
+    const out = [read()];
+    arr[1] = 99; pl.value = arr; await tick(); out.push(read());
+    arr.push(20); pl.value = arr; await tick(); out.push(read());
+    pl.value = [1, 2, 3]; await tick(); out.push(read(), arr.join(" "));
+    return out;
+  });
+  check("web data: a list changed in place and set again is drawn, and a later set leaves the caller's list alone", data, ["5 10 15", "5 99 15", "5 99 15 20", "1 2 3", "5 99 15 20"]);
+
+  // A static Plot (static on the chart, or on the plot) draws its rows again when its data changes, by property or attribute
+  const still = await p.evaluate(async () => {
+    const tick = () => new Promise((r) => requestAnimationFrame(() => setTimeout(r)));
+    document.body.insertAdjacentHTML("beforeend", `<rhp-chart id="st1" static scale="[0, 10]"><rhp-plot value="[1, 2, 3]"><template><plain-row></plain-row></template></rhp-plot></rhp-chart>
+      <rhp-chart id="st2" scale="[0, 10]"><rhp-plot static value="[1, 2, 3]"><template><plain-row></plain-row></template></rhp-plot></rhp-chart>`);
+    await tick();
+    const read = (s) => [...document.querySelectorAll(s + " .plain")].map((b) => b.style.getPropertyValue("--rhp-to")).join(" ");
+    const out = [];
+    for (const s of ["#st1", "#st2"]) {
+      const pl = document.querySelector(s + " rhp-plot");
+      out.push(read(s));
+      pl.value = [9, 9, 9]; await tick(); out.push(read(s));
+      pl.value = undefined; pl.setAttribute("value", "[5, 6]"); await tick(); out.push(read(s));
+      document.querySelector(s).remove();
+    }
+    return out;
+  });
+  check("web data: a static Plot (static on the chart or the plot) draws its rows again when a property or attribute changes its data", still, ["1 2 3", "9 9 9", "5 6", "1 2 3", "9 9 9", "5 6"]);
+
+  // .plot follows the Plot
+  const rendered = await p.evaluate(async () => {
+    const tick = () => new Promise((r) => requestAnimationFrame(() => setTimeout(r)));
+    const q = document.querySelector("#later"), before = q.plot, out = [before?.isConnected];
+    q.slat = undefined; await tick(); out.push(q.plot);
+    const a = document.querySelector("#ea"); a.remove(); await tick(); out.push(a.plot);
+    const b = document.querySelector("#eb"); document.querySelector("#e2").remove(); await tick(); out.push(b.plot, document.querySelector("#e2"));
+    return out;
+  });
+  check("web: .plot is null once its Plot is gone (no slat, removed, chart disposed)", rendered, [true, null, null, null, null]);
+
+  // Properties are taken in on the first connect only: an expando set later stays an expando when the plot moves
+  const expando = await p.evaluate(async () => {
+    const tick = () => new Promise((r) => requestAnimationFrame(() => setTimeout(r)));
+    const pl = document.querySelector("#e3 rhp-plot"), plot = pl.plot;
+    pl.meta = { x: 1 };
+    document.querySelector("#e3").append(pl); await tick();
+    return [Object.keys(pl.data), pl.meta, pl.plot === plot];
+  });
+  check("web: an expando set after the first connect is not taken for a column when the plot moves", expando, [["value"], { x: 1 }, true]);
+  check("no page errors", p.errors, []);
+  await p.close();
+}
+
+// Web components: <rhp-many-dots> (ManyDots), from properties and attributes
+{
+  const p = await open("file://" + at("out/web.html"));
+  await p.evaluate(() => T.md.mount());
+  check("web many-dots: 1,000 rows given by property draw 1,000 points in one collection, and the element stays hidden", await p.evaluate(() => {
+    const d1 = document.querySelector("#d1");
+    return [T.md.count("#md1"), document.querySelectorAll("#md1 .rhp-manydots").length, d1.dots === document.querySelector("#md1 .rhp-manydots"), d1.hidden, getComputedStyle(d1).display, d1.shadowRoot];
+  }), [1000, 1, true, true, "none", null]);
+  check("web many-dots: a color accessor colors each point (theme keys resolved)", await p.evaluate(() => [0, 1, 2, 3].map((i) => document.querySelector(`#md1 .rhp-manydot[data-rhp-index='${i}']`).style.backgroundColor)),
+    ["rgb(19, 137, 79)", "rgb(198, 40, 40)", "rgb(198, 40, 40)", "rgb(19, 137, 79)"]);
+  check("web many-dots: new rows by property with one value changed write that point's style only, and add, remove or move no point", await p.evaluate(() => T.md.moveOne()),
+    { count: 1000, sameCollection: true, made: 0, gone: 0, moved: 0, styled: ["500"] });
+  check("web many-dots: new rows by property with the first 10 removed keep every other point (no point made)", await p.evaluate(async () => {
+    const before = document.querySelector("#md1 .rhp-manydot[data-rhp-index='500']");
+    const r = await T.md.dropTen();
+    const after = document.querySelector("#md1 .rhp-manydot[data-rhp-index='490']");
+    return [r.count, r.sameCollection, r.made, r.gone, r.styled, after === before, after.style.left];
+  }), [990, true, 0, 10, [], true, "1%"]);
+  check("web many-dots: attributes (JSON rows, at/cross naming row fields, key, color, size, point-class, point-style); a row with no number is left out", await p.evaluate(() => [...document.querySelectorAll("#md2 .rhp-manydot")].map((e) => [e.className, e.style.left, e.style.bottom, getComputedStyle(e).width, getComputedStyle(e).opacity, getComputedStyle(e).backgroundColor])),
+    [["rhp-manydot pt", "20%", "30%", "6px", "0.5", "rgb(19, 137, 79)"], ["rhp-manydot pt", "50%", "60%", "6px", "0.5", "rgb(19, 137, 79)"]]);
+  const keep = await p.evaluate(async () => {
+    const d2 = document.querySelector("#d2"), [a, b] = document.querySelectorAll("#md2 .rhp-manydot");
+    d2.setAttribute("rows", '[{"id": "b", "x": 5, "y": 6}, {"id": "a", "x": 2, "y": 3}, {"id": "n", "x": 1, "y": 1}]');
+    d2.setAttribute("at", "y");
+    await T.md.wait();
+    const now = [...document.querySelectorAll("#md2 .rhp-manydot")];
+    return [now.length, now[0] === b, now[1] === a, now.map((e) => e.style.left).join(" ")];
+  });
+  check("web many-dots: attribute changes follow (rows reordered by key keep their points, at names another field)", keep, [3, true, true, "60% 30% 10%"]);
+  const guard = [await p.evaluate(() => document.querySelectorAll("#md3 .rhp-manydots").length)];
+  await p.evaluate(() => document.querySelector("#d3").setAttribute("cross", "y")); await p.evaluate(() => T.md.wait());
+  guard.push(await p.evaluate(() => [T.md.count("#md3"), document.querySelector("#md3 .rhp-manydot").style.bottom]));
+  await p.evaluate(() => document.querySelector("#d3").removeAttribute("cross")); await p.evaluate(() => T.md.wait());
+  guard.push(await p.evaluate(() => [document.querySelectorAll("#md3 .rhp-manydots").length, document.querySelector("#d3").dots]));
+  check("web many-dots: without cross nothing is drawn and nothing reported; with it the point draws; removed, it goes again", [guard, p.errors], [[0, [1, "20%"], [0, null]], []]);
+  await p.evaluate(() => T.md.noCross());
+  const errors = p.errors.splice(0);
+  await p.evaluate(() => document.querySelector("#md4").setAttribute("cross", "[0, 10]")); await p.evaluate(() => T.md.wait());
+  check("web many-dots: in a chart with no cross scale the error is reported and only it is left out; given one, it draws", [errors.map((e) => /requires a Chart with cross/.test(e)), await p.evaluate(() => T.md.count("#md4")), await p.evaluate(() => document.querySelectorAll("#md4 .rhp-chart").length), p.errors], [[true], 1, 1, []]);
+  await p.evaluate(() => document.querySelector("#d1").remove()); await p.evaluate(() => T.md.wait());
+  check("web many-dots: removing the element removes its collection, and the chart stays", await p.evaluate(() => [document.querySelectorAll("#md1 .rhp-manydots").length, document.querySelectorAll("#md1 > .rhp-chart").length]), [0, 1]);
+  check("no page errors", p.errors, []);
+  await p.close();
+}
+
+// Web components: <rhp-poster> (Poster) around charts
+{
+  const p = await open("file://" + at("out/web.html"));
+  const frame = () => p.evaluate(() => new Promise((r) => requestAnimationFrame(() => setTimeout(r))));
+  await p.evaluate(() => T.ps.mount());
+  check("web poster: look, kicker, title, dek and note draw figure.poster.day > figcaption with the parts, the chart inside the figure, in the light DOM", await p.evaluate(() => {
+    const ps1 = document.querySelector("#ps1");
+    return [T.ps.shape("#ps1"), ps1.shadowRoot, ps1.hidden, ps1.figure === ps1.querySelector(":scope > figure.poster"), document.querySelector("#psc").parentNode === ps1.figure];
+  }), [{ figure: "poster day", parts: ["Fruit", "Bananas lead", "Sold this week"], body: ["rhp-chart#psc", "span.note"], note: "Source: the shop", host: ["figure"] }, null, false, true, true]);
+  check("web poster: the chart inside it draws", await p.evaluate(() => [document.querySelectorAll("#psc > .rhp-chart").length, T.ps.bars("#psc")]), [1, "12 18"]);
+  const writes = await p.evaluate(async () => {
+    const bars = [...document.querySelectorAll("#psc .rhp-bar")];
+    document.querySelector("#psp").sold = [12, 25];
+    await new Promise((r) => requestAnimationFrame(() => setTimeout(r)));
+    return [T.ps.bars("#psc"), bars.every((b, i) => b === document.querySelectorAll("#psc .rhp-bar")[i])];
+  });
+  check("web poster: the chart inside it follows a new value, with no element made again", writes, ["12 25", true]);
+  check("web poster: slotted children give rich parts (over the attribute), other children are the figure's, in order", await p.evaluate(() => [T.ps.shape("#ps2"), document.querySelector("#ps2 .headline").innerHTML, document.querySelector("#psnote").parentNode.className, T.ps.bars("#psc2")]),
+    [{ figure: "poster", parts: ["K", "Rich title", ""], body: ["p#psintro", "rhp-chart#psc2", "span.note"], note: "A source", host: ["figure"] }, '<b slot="title" id="pst">Rich <i>title</i></b>', "note", "2 4"]);
+
+  await p.evaluate(() => { const ps1 = document.querySelector("#ps1"); ps1.setAttribute("title", "Apples catch up"); ps1.setAttribute("look", "night"); ps1.removeAttribute("note"); ps1.kicker = "Produce"; window.psFigure = ps1.figure; });
+  check("web poster: attribute and property changes update the parts in place (the figure is not made again)", await p.evaluate(() => [T.ps.shape("#ps1"), document.querySelector("#ps1").figure === window.psFigure]),
+    [{ figure: "poster night", parts: ["Produce", "Apples catch up", "Sold this week"], body: ["rhp-chart#psc"], note: null, host: ["figure"] }, true]);
+  check("web poster: title as a property goes through set()/get() and wins over the attribute; undefined brings the attribute back", await p.evaluate(() => {
+    const ps1 = document.querySelector("#ps1"), out = [];
+    ps1.set("title", "From a property");
+    out.push(document.querySelector("#ps1 .headline").textContent, ps1.get("title"), ps1.title);
+    ps1.set("title", undefined);
+    out.push(document.querySelector("#ps1 .headline").textContent);
+    const b = document.createElement("em"); b.textContent = "a node"; ps1.dek = b;
+    out.push(document.querySelector("#ps1 .dek").innerHTML);
+    ps1.dek = undefined;
+    out.push(document.querySelector("#ps1 .dek").textContent);
+    return out;
+  }), ["From a property", "From a property", "Apples catch up", "Apples catch up", "<em>a node</em>", "Sold this week"]);
+
+  await p.evaluate(() => { window.psChart = document.querySelector("#psc").chart; document.body.appendChild(document.createElement("section")).id = "pssec"; document.querySelector("#pssec").appendChild(document.querySelector("#ps1")); }); await frame();
+  check("web poster: moved in the page, it keeps its figure and the chart inside keeps its rendered chart and follows its data", await p.evaluate(async () => {
+    const ps1 = document.querySelector("#ps1");
+    document.querySelector("#psp").sold = [20, 25];
+    await new Promise((r) => requestAnimationFrame(() => setTimeout(r)));
+    return [ps1.parentNode.id, ps1.figure === window.psFigure, document.querySelector("#psc").chart === window.psChart, window.psChart.isConnected, T.ps.bars("#psc")];
+  }), ["pssec", true, true, true, "20 25"]);
+
+  await p.evaluate(() => { window.psc3 = document.querySelector("#psc3").chart; document.querySelector("#ps1").append(document.querySelector("#psc3")); }); await frame();
+  check("web poster: a chart moved into it joins the figure, after the others, and keeps its rendered chart", await p.evaluate(() => [T.ps.shape("#ps1").body, document.querySelector("#psc3").chart === window.psc3, document.querySelector("#psc").chart === window.psChart, T.ps.bars("#psc3")]),
+    [["rhp-chart#psc", "rhp-chart#psc3"], true, true, "7"]);
+
+  await p.evaluate(() => { window.ps1 = document.querySelector("#ps1"); window.ps1.remove(); }); await frame();
+  check("web poster: taken out of the page it is disposed, its children back in it in their order, and the charts inside disposed", await p.evaluate(() => [window.ps1.figure, window.ps1.querySelector("figure"), [...window.ps1.children].map((c) => c.id), document.querySelector("#psc"), window.ps1.querySelector("#psc").chart, window.ps1.querySelector("#psc .rhp-chart")]),
+    [null, null, ["psc", "psc3"], null, null, null]);
+  await p.evaluate(() => document.querySelector("#psbox").prepend(window.ps1)); await frame();
+  check("web poster: put back, it draws again, and so do its charts", await p.evaluate(() => [T.ps.shape("#ps1"), T.ps.bars("#psc"), T.ps.bars("#psc3")]),
+    [{ figure: "poster night", parts: ["Produce", "Apples catch up", "Sold this week"], body: ["rhp-chart#psc", "rhp-chart#psc3"], note: null, host: ["figure"] }, "20 25", "7"]);
+  await p.evaluate(() => { window.ps2 = document.querySelector("#ps2"); window.ps2.remove(); }); await frame();
+  check("web poster: disposed, every child node (blank text included) is back in the host in its first order, slot attributes kept", await p.evaluate(() => [...window.ps2.childNodes].map((n) => (n.nodeType === 3 ? (n.data.trim() ? "text" : "_") : n.localName + (n.slot ? "[" + n.slot + "]" : "")))),
+    ["_", "b[title]", "_", "p", "_", "rhp-chart", "_", "span[note]", "_"]);
+  await p.evaluate(() => T.ps.oddSlots()); await frame();
+  check("web poster: a child whose slot names an Object.prototype key (constructor, toString) is the figure's, like any other", await p.evaluate(() => [T.ps.shape("#ps4"), T.ps.bars("#psc4")]),
+    [{ figure: "poster", parts: ["", "T", ""], body: ["span", "i", "rhp-chart#psc4"], note: null, host: ["figure"] }, "3"]);
+  check("no page errors", p.errors, []);
+  await p.close();
+}
+
+// Web components: <rhp-poster> in the markup of a page still loading (elements defined by a classic script in <head>),
+// and a poster made with createElement and given properties before the elements were defined
+{
+  const p = await newPage();
+  p.errors = []; p.on("pageerror", (e) => p.errors.push(e.message));
+  await p.route("http://rhp.test/**", (r) => {
+    const f = new URL(r.request().url()).pathname.slice(1);
+    if (f === "web.js") return r.fulfill({ path: at("out/web.js"), contentType: "text/javascript" });
+    r.fulfill({ contentType: "text/html", body: `<!doctype html><html><head><meta charset="utf-8">
+      <script>
+        window.early = document.createElement("rhp-poster");
+        early.kicker = "Early"; early.look = "day";
+        early.append(Object.assign(document.createElement("b"), { slot: "title", textContent: "Made early" }));
+      </script>
+      <script src="web.js"></script></head>
+      <body><rhp-poster id="hp" look="day" title="Loading">
+        <rhp-chart id="hpc" scale="[0, 30]"><rhp-plot name='["A", "B"]' sold="[1, 2]"><template><fruit-row></fruit-row></template></rhp-plot></rhp-chart>
+        <p id="hpp">After the chart</p>
+      </rhp-poster></body></html>` });
+  });
+  await p.goto("http://rhp.test/index.html"); await p.waitForTimeout(400);
+  check("web poster: in the markup of a loading page, it takes all its children", await p.evaluate(() => [T.readyAtDefine, T.ps.shape("#hp"), T.ps.bars("#hpc")]),
+    ["loading", { figure: "poster day", parts: ["", "Loading", ""], body: ["rhp-chart#hpc", "p#hpp"], note: null, host: ["figure"] }, "1 2"]);
+  await p.evaluate(() => { early.id = "early"; document.body.append(early); }); await p.waitForTimeout(100);
+  check("web poster: properties set before the elements were defined are taken in when it connects", await p.evaluate(() => [T.ps.shape("#early"), Object.keys(early)]),
+    [{ figure: "poster day", parts: ["Early", "Made early", ""], body: [], note: null, host: ["figure"] }, []]);
+  check("no page errors", p.errors, []);
+  await p.close();
+}
+
+// Web components: rhp's blocks as elements inside slats (web/src/elements/blocks.js), and the named attribute forms
+// order="sortBy:..." and ticks="every:..." (web/src/helpers.js), on test/web.js's page (T.blocks() adds the charts)
+{
+  const p = await open("file://" + at("out/web.html"));
+  const frame = () => p.evaluate(() => new Promise((r) => requestAnimationFrame(() => setTimeout(r))));
+  await p.evaluate(() => { document.querySelector("#box").remove(); T.blocks(); }); await frame(); await frame();
+  check("web blocks: block elements in a slat draw, as display: contents hosts holding the block", await p.evaluate(() => [...document.querySelectorAll("#b1 block-row")].map((r) => [[...r.children].map((c) => c.localName + ">" + c.firstElementChild?.className).join(" "), getComputedStyle(r.firstElementChild).display])),
+    [["rhp-bar>rhp-bar rhp-label>rhp-label", "contents"], ["rhp-bar>rhp-bar rhp-label>rhp-label", "contents"], ["rhp-bar>rhp-bar rhp-label>rhp-label", "contents"]]);
+  check("web blocks: a Label's text (the host's child) is inside the block", await p.evaluate(() => [T.labels("#b1"), [...document.querySelectorAll("#b1 rhp-label")].map((l) => l.childNodes.length).join(" ")]), ["10 25 5", "1 1 1"]);
+  check("web blocks: they draw where the Solid blocks draw", await p.evaluate(() => [T.boxes("#b1"), T.boxes("#b1").length]), await p.evaluate(() => [T.boxes("#b2"), 6]));
+  const writes = await p.evaluate(async () => {
+    const bars = [...document.querySelectorAll("#b1 .rhp-bar")], seen = [];
+    const mo = new MutationObserver((ms) => ms.forEach((m) => seen.push(m.target.closest("block-row").$row())));
+    document.querySelectorAll("#b1 block-row").forEach((r) => mo.observe(r, { attributes: true, subtree: true, attributeFilter: ["style"] }));
+    T.setValues([10, 30, 5]);
+    await new Promise((r) => requestAnimationFrame(() => setTimeout(r)));
+    mo.disconnect();
+    return { same: bars.every((b, i) => b === document.querySelectorAll("#b1 .rhp-bar")[i]), rows: [...new Set(seen)] };
+  });
+  await frame();
+  check("web blocks: a new number moves that row's blocks only (row 1), and no element is made again", writes, { same: true, rows: [1] });
+  check("web blocks: after it they still draw where the Solid blocks draw, with the new text", [await p.evaluate(() => T.boxes("#b1")), await p.evaluate(() => T.labels("#b1"))], [await p.evaluate(() => T.boxes("#b2")), "10 30 5"]);
+  check("web blocks: attributes (coerced), class, a shape() property and a CSS length reach the blocks", await p.evaluate(() => {
+    const t = document.querySelector("#b3 .rhp-tick"), d = document.querySelector("#b3 .rhp-dot");
+    return [t.className, t.style.getPropertyValue("--rhp-at"), t.style.getPropertyValue("--rhp-color"), d.style.getPropertyValue("--rhp-size"), d.style.getPropertyValue("--rhp-clip") !== "", typeof document.querySelector("#b3 rhp-tick").at];
+  }), ["rhp-tick t", "10", "var(--rhp-negative)", "14px", true, "number"]);
+  check("web blocks: an <rhp-line> draws the path the Solid Line draws", await p.evaluate(() => [...document.querySelectorAll("#b3 attr-row")].map((r) => { const a = r.querySelector(".rhp-line.el .rhp-stroke"), b = r.querySelector(".rhp-line.solid .rhp-stroke"); return [!!a.getAttribute("d"), a.getAttribute("d") === b.getAttribute("d")]; })), [[true, true], [true, true]]);
+  check("web blocks: an accessor given as a property (to an element made with createElement) is read live", await p.evaluate(() => [...document.querySelectorAll("#b3 accessor-row .rhp-bar")].map((b) => b.style.getPropertyValue("--rhp-to")).join(" ")), "6 8");
+  await p.evaluate(() => { document.querySelector("#bp4").value = [5, 1]; document.querySelector("#b3 rhp-tick").setAttribute("color", "positive"); }); await frame();
+  check("web blocks: the accessor follows the data, and an attribute change reaches the block", await p.evaluate(() => [[...document.querySelectorAll("#b3 accessor-row .rhp-bar")].map((b) => b.style.getPropertyValue("--rhp-to")).join(" "), document.querySelector("#b3 .rhp-tick").style.getPropertyValue("--rhp-color")]), ["10 2", "var(--rhp-positive)"]);
+  await p.evaluate(() => { for (const c of ["#b1", "#b2"]) document.querySelector(c).setAttribute("orientation", "vertical"); }); await frame(); await frame();
+  check("web blocks: they read the chart's orientation (vertical) and still draw where the Solid blocks draw", [await p.evaluate(() => [...document.querySelectorAll("#b1 .rhp-bar")].map((b) => b.dataset.rhpO).join("")), await p.evaluate(() => T.boxes("#b1"))], ["vvv", await p.evaluate(() => T.boxes("#b2"))]);
+  await p.evaluate(() => { const l = document.querySelector("#b1 rhp-label"); window.lb = l.block; l.textContent = "new"; document.querySelector("#b1 rhp-bar").set("title", "hello"); }); await frame();
+  check("web blocks: the host's content replaced replaces the block's children; a prop the block was not drawn with draws it again", await p.evaluate(() => { const l = document.querySelector("#b1 rhp-label"); return [l.block === window.lb, l.block.textContent, l.childNodes.length, document.querySelector("#b1 rhp-bar").block.getAttribute("title")]; }), [true, "new", 1, "hello"]);
+  await p.evaluate(() => document.querySelector("#bp1").setAttribute("static", "")); await frame();
+  check("web blocks: in a static Plot (its rows' owners disposed once drawn) they draw once", await p.evaluate(() => [T.labels("#b1"), [...document.querySelectorAll("#b1 .rhp-bar")].map((b) => b.style.getPropertyValue("--rhp-to")).join(" ")]), ["10 30 5", "10 30 5"]);
+  p.errors = [];
+  check("web blocks: one made outside a slat draws nothing and reports why", [await p.evaluate(() => T.outside()), p.errors.map((e) => /<rhp-bar> draws only inside a slat/.test(e))], [[0, null, 6], [true]]);
+  p.errors = [];
+  check("web: order=\"sortBy:value:desc\" sorts the rows", [await p.evaluate(() => T.positions("#b1")), await p.evaluate(() => T.positions("#b2"))], ["1 0 2", "1 0 2"]);
+  await p.evaluate(() => document.querySelector("#bp1").setAttribute("order", "sortBy:value")); await frame();
+  check("web: order=\"sortBy:value\" sorts them the other way", await p.evaluate(() => T.positions("#b1")), "1 2 0");
+  check("web: ticks=\"every:5\" puts the ticks at multiples of 5", await p.evaluate(() => T.axisTicks("#b1")), "0 5 10 15 20 25 30 35 40");
+  await p.evaluate(() => document.querySelector("#b1").setAttribute("ticks", "every:15:ends")); await frame();
+  check("web: ticks=\"every:15:ends\" adds the scale's ends", await p.evaluate(() => T.axisTicks("#b1")), "0 15 30 40");
+  await p.evaluate(() => document.querySelector("#b1").setAttribute("ticks", "every:0")); await frame();
+  check("web: ticks=\"every:0\" is reported, and the chart draws its own ticks", [p.errors.map((e) => /every:step/.test(e)), await p.evaluate(() => T.axisTicks("#b1") === T.axisTicks("#b2"))], [[true], true]);
+  p.errors = [];
+  await p.evaluate(() => T.staticTick()); await frame(); await frame();
+  const staticTick = [await p.evaluate(() => { window.st = document.querySelector("#b4 rhp-tick"); return window.st.block?.style.getPropertyValue("--rhp-at") ?? null; })];
+  await p.evaluate(() => window.st.setAttribute("at", "7")); await frame();
+  staticTick.push(await p.evaluate(() => window.st.block.style.getPropertyValue("--rhp-at")));
+  check("web blocks: one drawn first when it is connected (an attribute, no property), in a static Plot, draws once and then follows nothing", [staticTick, p.errors], [["5", "5"], []]);
+  await p.evaluate(() => document.querySelector("#bx").remove()); await frame();
+  check("web blocks: the charts removed, nothing is left drawing", await p.evaluate(() => document.querySelectorAll(".rhp-bar, .rhp-label").length), 0);
+  check("no page errors", p.errors, []);
+  await p.close();
+}
+
+// Web components: fixes after the second review (hooks at the end of test/web.js)
+{
+  const p = await open("file://" + at("out/web.html"));
+  // [<rhp-line> path === Line's, <rhp-area> path === Area's, points drawn] after each change of the column
+  check("web blocks: <rhp-line> and <rhp-area> written with h follow their points column in a Plot that is not static (as Line and Area do)", await p.evaluate(() => T.livePoints()),
+    [[true, true, 3], [true, true, 3], [true, true, 4], [true, true, 2]]);
+  check("web: a prop switched between an object and a list holds the new value, not a merge (point-style, animate, room)", await p.evaluate(() => T.typeSwitch()),
+    [["0.1 0.9", [true, "0,1"]], ["0.3 0.3", [false, "opacity"]], [[false, "duration"], true, "300ms", [true, "0,1"]]]);
+  check("web: a style attribute keeps a \";\" inside url(...) or quotes, drops comments, and applies an !important declaration (without its priority)", [
+    await p.evaluate(() => T.parseStyle(`background: url("data:image/png;base64,AAA"); color: red !important; /* x; y */ --x: 'a;b'; content: "\\";"`)),
+    await p.evaluate(() => T.styleAttr()),
+  ], [{ background: 'url("data:image/png;base64,AAA")', color: "red", "--x": "'a;b'", content: '"\\";"' }, ["red solid 2px", 'url("data:image/gif;base64,R0lGODlhAQABAAAAACw=")', "0.5"]]);
+  if (chromiumOnly("web: charts removed while waiting for a slat tag that is never defined are not kept in memory")) {
+    const made = await p.evaluate(() => T.neverDefined(20));
+    const cdp = await p.context().newCDPSession(p);
+    for (let k = 0; k < 3; k++) await cdp.send("HeapProfiler.collectGarbage");
+    check("web: charts removed while waiting for a slat tag that is never defined (a plot's template, .slat, a scale's template) are not kept in memory", [made, await p.evaluate(() => T.alive())], [80, 0]);
+    await cdp.detach();
+  }
+  check("web: a plot waiting for its slat tag still draws once the tag is defined", await p.evaluate(() => T.definedLater()), [0, "3 4"]);
+  check("web many-dots: props it has no form for (set() of aria-label, role, classList, data-*, onClick; an aria-* attribute) reach the collection's element", await p.evaluate(() => T.manyDotsProps()),
+    { ariaLabel: "Points", description: "From the attribute", role: "list", hot: true, dataX: "1", clicked: 1, dots: 1, removed: null });
+  check("web: <rhp-chart role=\"img\" aria-label=\"Sales\"> keeps them on the host and the .rhp-chart inside does not repeat them; label and set() still reach the Chart", await p.evaluate(() => T.chartAria()),
+    [["img", "Sales"], [null, null], ["figure", "Fruit"], ["img", "By property"]]);
+  if (chromiumOnly("web: the chart's role and name are one node of the accessibility tree")) {
+    const tree = await p.locator("#ca").ariaSnapshot();
+    check("web: the chart's role and name are one node of the accessibility tree", [tree.split('img "Sales"').length - 1, tree.split('figure "Fruit"').length - 1], [1, 1]);
+  }
+  // [drawn within 5 s, [points drawn, <rhp-line>'s path === Line's]], then the same after the column is set again, and
+  // whether the path changed
+  check("web: a static plot draws a 20,000-point line (Line and <rhp-line>) within a generous bound, and draws it again when its column is set again", await p.evaluate(() => T.bigStatic(20000)),
+    [true, [20000, true], [20000, true], true]);
+  check("no page errors", p.errors, []);
+  await p.close();
+}
+
+// Web components: templates with {bindings} (web/src/template.js), written as a slat's template string and as <template>
+// markup with no JS, the thin block elements they bind, and their errors (hooks at the end of
+// test/web.js, under "Templates with {bindings}")
+{
+  const p = await open("file://" + at("out/web.html"));
+  // Each row: [tag, position, label texts, bar's --rhp-to, its color, the value label's --rhp-at, span class, data-sold, data-first, data-deep, --w, color, span text]
+  check("web templates: a slat's template string draws each row in the slat element (text, whole and mixed attributes, nested paths, style, index; a {...} that is not a path stays as written)", await p.evaluate(() => T.tpl.strings()), [
+    ["tpl-row", 0, "APPLES|12 kg", "12", "var(--rhp-muted)", "12", "t-muted extra", "12", "1", "s", "12px", "red", "#0: Apples {not a path}"],
+    ["tpl-row", 1, "BANANAS|18 kg", "18", "var(--rhp-positive)", "18", "t-positive extra", "18", "3", "m", "18px", "red", "#1: Bananas {not a path}"],
+    ["tpl-row", 2, "CHERRIES|7 kg", "7", "var(--rhp-muted)", "7", "t-muted extra", "7", "5", null, "7px", "red", "#2: Cherries {not a path}"],
+  ]);
+  check("web templates: a helper wins over a column of the same name (label), the block elements are bound (no attributes left on them), and a block's blank content is dropped", await p.evaluate(() => [document.querySelector("#ts1 .rhp-label").textContent, [...document.querySelectorAll("#ts1 rhp-bar, #ts1 rhp-label")].every((b) => b.attributes.length === 0), [...document.querySelectorAll("#ts1 rhp-bar")].map((b) => b.childNodes.length + ":" + b.block.childNodes.length).join(" ")]), ["APPLES", true, "1:0 1:0 1:0"]);
+  check("web templates: a new number writes that row's elements only (typed block props and plain sites), and makes no element again", await p.evaluate(() => T.tpl.oneNumber()), { same: true, rows: ["Bananas"] });
+  check("web templates: after it, the row shows the new number everywhere", await p.evaluate(() => T.tpl.read()[1].slice(2, 8)), ["BANANAS|25 kg", "25", "var(--rhp-positive)", "25", "t-positive extra", "25"]);
+  check("web templates: on:click=\"{helper}\" calls the helper with the event and the row", await p.evaluate(() => T.tpl.click()), ["Bananas:click"]);
+  check("web templates: slat() again with the same template string and the same settings is the same slat; another string, or other helpers, room or css, throws", await p.evaluate(() => T.tpl.redefine()), [true, "rhp-web: <tpl-row> is already defined (with another template)", "rhp-web: <tpl-row> is already defined (with the same template and other settings)", "rhp-web: <tpl-row> is already defined (with the same template and other settings)", "rhp-web: <tpl-row> is already defined (with the same template and other settings)"]);
+  p.errors = [];
+  check("web templates: set() and a property on a bound block are reported, and change nothing", [await p.evaluate(() => T.tpl.setBound()), p.errors.map((e) => /takes its props from its template/.test(e))], ["12", [true, true]]);
+  p.errors = [];
+  // Each row: [plot class, data-rhp-slat set, data-cfg, label, --rhp-to, color, opacity], then the plain-row bar's opacity
+  check("web templates: a declarative template (no JS) draws with a <div> root, its <style> applies inside its own plot only, and a JSON attribute stays as written", await p.evaluate(() => T.tpl.declarative()), [
+    ["rhp-plot", true, '{"a": 1}', "A", "12", "var(--rhp-muted)", "0.5"],
+    ["rhp-plot", true, '{"a": 1}', "B", "18", "var(--rhp-positive)", "0.5"],
+    "1",
+  ]);
+  check("web templates: 50 charts with the same template share one slat type and one sheet", await p.evaluate(() => T.tpl.fifty()), [100, 1, 0]);
+  // A whole attribute's true is the attribute present and empty, its false the attribute left out
+  check("web templates: an <rhp-scale> template draws each tick (d is the tick) and its room attribute reaches the chart, and a static plot's compiled rows hold their values and are drawn again with new data", await p.evaluate(() => T.tpl.scaleAndStatic()),
+    [[["0", "", "0"], ["10", null, "10"], ["20", null, "20"]], "4/4 8/8", "30px", "6/6 2/2 9/9"]);
+  check("web templates: no template reaches Function", await p.evaluate(() => T.tpl.noFunction()), [2, 0]);
+  p.errors = [];
+  const errored = await p.evaluate(() => T.tpl.errors());
+  const errors = p.errors.splice(0);
+  const has = (re) => errors.filter((e) => re.test(e)).length;
+  check("web templates: errors are reported (two roots, a block as root, an id binding on the root, onclick, an on: naming no helper, a block inside a block) and only what is wrong is left out", [
+    has(/holds 2 elements/), has(/a block element \(<rhp-bar>\) cannot be the row's root/), has(/root takes no binding on id/), has(/onclick attributes are refused/), has(/on: attribute names one of the slat's helpers/), has(/<rhp-label> is inside <rhp-bar>/),
+    errored[0], errored[1],
+  ], [1, 1, 1, 1, 1, 1, 2, ["", false, "3", 1, 0]]);
+  check("web templates: a helper that throws is reported once per binding (not per row), keeps its last value, and the plot draws every row", [has(/threw \(bad row\)/), errored[2]], [2, [["4", "4", "4"], ["0", "", "5"], ["0", "", "6"]]]);
+  check("web templates: a {...} that is not a path stays as written", [await p.evaluate(() => T.tpl.literal()), p.errors], [
+    [["{value * 2}", "{Math.max(value, 10)} 3"], ["{value * 2}", "{Math.max(value, 10)} 12"]], [],
+  ]);
+  p.errors = [];
+  check("web templates: a block element (display: contents) measures as the block it draws: getBoundingClientRect, getClientRects, offset* and client*", await p.evaluate(() => T.tpl.measure()),
+    ["rhp-label true true true true true", "rhp-bar true true true true true", "rhp-dot true true true true true", "rhp-label true true true true true", "rhp-bar true true true true true", "rhp-dot true true true true true"]);
+  // [root tabindex, then per bar --rhp-from/--rhp-to/opacity] per row, before and after op changes
+  check("web templates: a bound or mixed style on a block element is parsed (it keeps --rhp-from and --rhp-to and follows the data), and the row root takes no tabindex binding", await p.evaluate(() => T.tpl.reviewFixes()), [
+    [[null, "0/3/0.3", "0/3/0.2"], [null, "0/4/0.6", "0/4/0.4"]],
+    [[null, "0/3/0.7", "0/3/0.2"], [null, "0/4/0.8", "0/4/0.4"]],
+  ]);
+  check("web templates: the tabindex binding on the root is reported", p.errors.filter((e) => /root takes no binding on tabindex/.test(e)).length, 1);
+  p.errors = [];
+  check("no page errors", p.errors, []);
+  await p.close();
+}
+
+// No build step: the web components from one module (web/dist/rhp-web.js, built into out/rhp-web.js by
+// web/scripts/build.mjs), on a plain page that imports slat, h and the blocks from it and writes the chart as markup
+{
+  check("web build: rhp-web.js carries Solid's license and rhp's MIT notice, and posters.css is src/posters.css", [
+    /^\/\*! Includes Solid \d/.test(fs.readFileSync(at("out/rhp-web.js"), "utf8")),
+    /\/\*! @shashank1010\/rhp-web \S+ with @bezda\/rhp \S+.*MIT License/.test(fs.readFileSync(at("out/rhp-web.js"), "utf8").slice(0, 3000)),
+    fs.readFileSync(at("out/posters.css"), "utf8") === fs.readFileSync(path.join(here, "../src/posters.css"), "utf8"),
+  ], [true, true, true]);
+  const webSrc = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? webSrc(path.join(d, e.name)) : e.name.endsWith(".js") ? [path.join(d, e.name)] : []));
+  check("web: web/src calls no new Function and no eval", webSrc(path.join(here, "../web/src")).filter((f) => /\bFunction\b|\beval\s*\(/.test(fs.readFileSync(f, "utf8"))).map((f) => path.relative(here, f)), []);
+
+  const p = await newPage();
+  p.errors = []; p.on("pageerror", (e) => p.errors.push(e.message));
+  await p.route("http://rhp.test/**", (r) => {
+    const f = new URL(r.request().url()).pathname.slice(1);
+    if (f === "rhp-web.js" || f === "standalone.js") return r.fulfill({ path: at("out/" + f), contentType: "text/javascript" });
+    r.fulfill({ contentType: "text/html", body: `<!doctype html><meta charset="utf-8">
+      <rhp-chart id="w1" scale="[0, 30]">
+        <rhp-plot id="wp1" name='["Apples", "Bananas", "Cherries"]' sold="[12, 18, 7]"><template><fruit-row></fruit-row></template></rhp-plot>
+      </rhp-chart>
+      <rhp-chart id="w2" scale="[0, 30]"><rhp-plot value="[5, 10]"><template><html-row></html-row></template></rhp-plot></rhp-chart>
+      <rhp-chart id="w3" scale="[0, 30]"><rhp-plot id="wp3" value="[5, 10]"><template><html-block-row></html-block-row></template></rhp-plot></rhp-chart>
+      <script type="module">
+        import { slat, h, html, Bar, Label, createSignal } from "./rhp-web.js";
+        const [unit, setUnit] = createSignal("");
+        window.setUnit = setUnit;
+        slat("fruit-row", { thickness: 30, attrs: (d) => ({ "data-fruit": d.name }) }, (d) => [
+          h(Label, { edge: "start" }, () => d.name),
+          h(Bar, { to: () => d.sold }),
+          h(Label, { at: () => d.sold }, () => d.sold + unit()),
+        ]);
+        slat("html-row", (d) => html\`<\${Bar} class="hb" to=\${() => d.value} />\`);
+        slat("html-block-row", (d) => html\`<rhp-bar class="hbe" to=\${() => d.value}></rhp-bar>\`);
+      </script>` });
+  });
+  await p.goto("http://rhp.test/index.html"); await p.waitForTimeout(400);
+  const rows = () => p.evaluate(() => [...document.querySelectorAll("#w1 .rhp-plot > *")].map((r) => r.localName + ":" + r.dataset.fruit + ":" + r.querySelector(".rhp-bar").style.getPropertyValue("--rhp-to")).join(" "));
+  check("no build step (web): <rhp-chart> markup draws with a slat made with slat() and h, from rhp-web.js alone", [await rows(), await p.evaluate(() => document.querySelectorAll("#w1 > .rhp-chart").length)], ["fruit-row:Apples:12 fruit-row:Bananas:18 fruit-row:Cherries:7", 1]);
+  const writes = await p.evaluate(async () => {
+    const bars = [...document.querySelectorAll("#w1 .rhp-bar")], seen = [];
+    const mo = new MutationObserver((ms) => ms.forEach((m) => seen.push(m.target.closest("fruit-row").dataset.fruit)));
+    document.querySelectorAll("#w1 fruit-row").forEach((r) => mo.observe(r, { attributes: true, subtree: true, attributeFilter: ["style"] }));
+    document.querySelector("#wp1").sold = [12, 25, 7];
+    await new Promise((r) => requestAnimationFrame(() => setTimeout(r)));
+    mo.disconnect();
+    return { same: bars.every((b, i) => b === document.querySelectorAll("#w1 .rhp-bar")[i]), rows: [...new Set(seen)] };
+  });
+  check("no build step (web): a new number set as a property moves its bar only, and no element is made again", [await rows(), writes], ["fruit-row:Apples:12 fruit-row:Bananas:25 fruit-row:Cherries:7", { same: true, rows: ["Bananas"] }]);
+  await p.evaluate(() => window.setUnit(" kg")); await p.waitForTimeout(50);
+  check("no build step (web): a signal made with the module's createSignal drives a slat (one Solid for the page and the elements)", await p.evaluate(() => [...document.querySelectorAll("#w1 fruit-row .rhp-label:not([data-rhp-edge])")].map((l) => l.textContent).join(", ")), "12 kg, 25 kg, 7 kg");
+  check("no build step (web): a slat written with html draws (no CSP here)", await p.evaluate(() => [...document.querySelectorAll("#w2 .hb")].map((b) => b.style.getPropertyValue("--rhp-to")).join(" ")), "5 10");
+  const htmlBlocks = () => p.evaluate(() => [...document.querySelectorAll("#w3 rhp-bar")].map((b) => b.block?.style.getPropertyValue("--rhp-to")).join(" "));
+  const htmlBefore = await htmlBlocks();
+  await p.evaluate(() => (document.querySelector("#wp3").value = [5, 20])); await p.waitForTimeout(50);
+  check("no build step (web): html writes a () => hole on a block element as a live property (to=${() => d.value} follows the data)", [htmlBefore, await htmlBlocks()], ["5 10", "5 20"]);
+  check("no build step (web): the module exports slat, RhpSlat, h, define, the element classes (the ones defined) and everything standalone.js exports", await p.evaluate(async () => {
+    const w = await import("./rhp-web.js"), s = await import("./standalone.js");
+    const classes = { RhpChart: "rhp-chart", RhpPlot: "rhp-plot", RhpScale: "rhp-scale", RhpAxis: "rhp-axis", RhpTheme: "rhp-theme", RhpManyDots: "rhp-many-dots", RhpPoster: "rhp-poster",
+      RhpBar: "rhp-bar", RhpDot: "rhp-dot", RhpTick: "rhp-tick", RhpLabel: "rhp-label", RhpCell: "rhp-cell", RhpPlace: "rhp-place", RhpArea: "rhp-area", RhpLine: "rhp-line" };
+    return [
+      ["slat", "RhpSlat", "RhpBlock", "h", "define", "restyle"].filter((n) => typeof w[n] !== "function"),
+      Object.entries(classes).filter(([n, tag]) => customElements.get(tag) !== w[n]).map(([n]) => n),
+      Object.keys(s).length > 40,
+      Object.keys(s).filter((n) => !(n in w)),
+      Object.keys(s).filter((n) => n !== "slat" && typeof s[n] !== typeof w[n]),
+    ];
+  }), [[], [], true, [], []]);
+  check("no page errors", p.errors, []);
+  await p.close();
+}
+
+// The same under a Content-Security-Policy without 'unsafe-eval': a slat written with h draws with no violation, and one
+// written with html (solid-js/html compiles its templates with new Function) is refused, reported, and leaves only its
+// own plot out. The page script is a file (script-src 'self' allows no inline script). rhp's styles are adopted
+// stylesheets (CSSStyleSheet, which style-src doesn't govern) and inline styles set through the CSSOM; the one <style>
+// element it adds (data-rhp-layers, declaring its cascade layers first) needs style-src 'unsafe-inline' or a nonce,
+// which rhp takes from the page's first element with one (style, link or script). Two pages: the policy with
+// style-src 'unsafe-inline', and a strict one with a nonce and nothing inline.
+for (const [label, csp, nonce] of [
+  ["style-src 'unsafe-inline'", "script-src 'self' http://rhp.test; style-src 'unsafe-inline' http://rhp.test", ""],
+  ["strict, with a nonce", "default-src 'self'; script-src 'self' 'nonce-rhp4web'; style-src 'self' 'nonce-rhp4web'", "rhp4web"],
+]) {
+  const p = await newPage();
+  p.errors = []; p.on("pageerror", (e) => p.errors.push(e.message));
+  await p.addInitScript(() => {
+    window.violations = [];
+    document.addEventListener("securitypolicyviolation", (e) => window.violations.push({ directive: e.effectiveDirective || e.violatedDirective, blocked: e.blockedURI }));
+  });
+  await p.route("http://rhp.test/**", (r) => {
+    const f = new URL(r.request().url()).pathname.slice(1);
+    if (f === "rhp-web.js") return r.fulfill({ path: at("out/rhp-web.js"), contentType: "text/javascript" });
+    if (f === "page.js") return r.fulfill({ contentType: "text/javascript", body: `import { slat, h, html, Bar, Label } from "./rhp-web.js";
+      slat("fruit-row", { thickness: 30, attrs: (d) => ({ "data-fruit": d.name }) }, (d) => [
+        h(Label, { edge: "start" }, () => d.name),
+        h(Bar, { to: () => d.sold }),
+        h(Label, { at: () => d.sold }, () => d.sold),
+      ]);
+      slat("html-row", (d) => html\`<\${Bar} class="hb" to=\${() => d.value} />\`);
+      window.addHtmlChart = () => document.body.insertAdjacentHTML("beforeend", \`<rhp-chart id="c2" scale="[0, 30]">
+        <rhp-plot value="[5, 10]"><template><html-row></html-row></template></rhp-plot>
+        <rhp-plot name='["Kiwis"]' sold="[9]"><template><fruit-row></fruit-row></template></rhp-plot>
+      </rhp-chart>\`);
+      window.addExprChart = () => document.body.insertAdjacentHTML("beforeend", \`<rhp-chart id="c4" scale="[0, 30]">
+        <rhp-plot name='["Kiwis"]' sold="[9]"><template><div class="x"><rhp-bar to="{sold}"></rhp-bar><span class="ex">{sold > 5 ? 'big' : 'small'}</span><span class="px">{name}</span></div></template></rhp-plot>
+      </rhp-chart>\`);
+      window.addHandlerChart = () => document.body.insertAdjacentHTML("beforeend", \`<rhp-chart id="c5" scale="[0, 30]">
+        <rhp-plot sold="[3]"><template><div class="hd"><button class="f" onfocusin="window.ran = 1">{sold}</button><svg><rect width="5" height="5"><set attributeName="width" to="9" begin="0s" onbegin="window.ran = 2"></set></rect></svg></div></template></rhp-plot>
+      </rhp-chart>\`);` });
+    r.fulfill({ contentType: "text/html", body: `<!doctype html><html><head><meta charset="utf-8">
+      <meta http-equiv="Content-Security-Policy" content="${csp}"></head><body>
+      <rhp-chart id="c1" scale="[0, 30]">
+        <rhp-plot id="p1" name='["Apples", "Bananas", "Cherries"]' sold="[12, 18, 7]"><template><fruit-row></fruit-row></template></rhp-plot>
+      </rhp-chart>
+      <rhp-chart id="c3" scale="[0, 30]">
+        <rhp-plot name='["Figs", "Plums"]' sold="[4, 6]"><template><div class="d" data-sold="{sold}"><rhp-label edge="start">{name}</rhp-label><rhp-bar to="{sold}" color="positive"></rhp-bar></div></template></rhp-plot>
+      </rhp-chart>
+      <script type="module" src="page.js"${nonce ? ` nonce="${nonce}"` : ""}></script></body></html>` });
+  });
+  await p.goto("http://rhp.test/index.html"); await p.waitForTimeout(400);
+  const frame = () => p.evaluate(() => new Promise((r) => requestAnimationFrame(() => setTimeout(r))));
+  const rows = (sel) => p.evaluate((sel) => [...document.querySelectorAll(sel + " fruit-row")].map((r) => r.dataset.fruit + ":" + r.querySelector(".rhp-bar").style.getPropertyValue("--rhp-to")).join(" "), sel);
+  check(`web CSP (${label}): a slat written with h draws, with no CSP violation and no error`, [await rows("#c1"), await p.evaluate(() => window.violations), p.errors], ["Apples:12 Bananas:18 Cherries:7", [], []]);
+  check(`web CSP (${label}): rhp's styles apply (its layer statement is in force, the slats are laid out)`, await p.evaluate(() => [document.querySelector("style[data-rhp-layers]")?.sheet != null, getComputedStyle(document.querySelector("#c1 fruit-row")).position, document.querySelector("#c1 fruit-row").getBoundingClientRect().height]), [true, "absolute", 30]);
+  await p.evaluate(() => (document.querySelector("#p1").sold = [12, 25, 7])); await frame();
+  check(`web CSP (${label}): a property update moves the bar`, [await rows("#c1"), await p.evaluate(() => window.violations)], ["Apples:12 Bananas:25 Cherries:7", []]);
+  // (A style="..." in the page's markup, a template's included, is refused by the parser under the strict policy)
+  check(`web CSP (${label}): a declarative template (no JS) draws, with no violation and no error`, [
+    await p.evaluate(() => [...document.querySelectorAll("#c3 .d")].map((r) => [r.querySelector(".rhp-label").textContent, r.querySelector(".rhp-bar").style.getPropertyValue("--rhp-to"), r.dataset.sold, r.querySelector(".rhp-bar").style.getPropertyValue("--rhp-color")].join(":")).join(" ")),
+    await p.evaluate(() => window.violations), p.errors,
+  ], ["Figs:4:4:var(--rhp-positive) Plums:6:6:var(--rhp-positive)", [], []]);
+  // From a task of the page's own: code run by p.evaluate (and the microtasks after it, where the chart builds) may
+  // evaluate strings whatever the page's CSP says
+  await p.evaluate(() => setTimeout(() => window.addHtmlChart())); await frame(); await frame();
+  const refused = [
+    p.errors.length > 0 && p.errors.every((e) => /eval|Content Security Policy|CSP/i.test(e)),
+    await p.evaluate(() => window.violations.filter((v) => v.blocked !== "eval" && !/^script-src/.test(v.directive))),
+    await p.evaluate(() => [document.querySelectorAll("#c2 .hb").length, document.querySelectorAll("#c2 .rhp-plot").length]),
+    await rows("#c2"),
+    await rows("#c1"),
+  ];
+  check(`web CSP (${label}): a slat written with html is refused (no 'unsafe-eval'): reported as an eval/CSP error, only its plot is left out, the h plots still draw`, refused, [true, [], [0, 1], "Kiwis:9", "Apples:12 Bananas:25 Cherries:7"]);
+  p.errors = [];
+  await p.evaluate(() => setTimeout(() => window.addExprChart())); await frame(); await frame();
+  check(`web CSP (${label}): a template draws with no 'unsafe-eval': a {...} that is not a path stays as written (no code is compiled), and its paths draw`, [
+    p.errors.length,
+    await p.evaluate(() => [...document.querySelectorAll("#c4 .x")].map((r) => [r.querySelector(".rhp-bar").style.getPropertyValue("--rhp-to"), r.querySelector(".ex").textContent, r.querySelector(".px").textContent])),
+  ], [0, [["9", "{sold > 5 ? 'big' : 'small'}", "Kiwis"]]]);
+  // Handler attributes the browser compiles beyond HTMLElement.prototype's (onfocusin, SVG's onbegin) are refused too
+  p.errors = [];
+  await p.evaluate(() => (window.violations = [], setTimeout(() => window.addHandlerChart()))); await frame(); await frame();
+  await p.evaluate(() => document.querySelector("#c5 .f")?.focus()); await p.waitForTimeout(100);
+  check(`web CSP (${label}): onfocusin and an SVG onbegin in a template are refused and reported, and never compiled (no violation)`, [
+    await p.evaluate(() => [document.querySelector("#c5 .f")?.textContent, document.querySelector("#c5 .f")?.hasAttribute("onfocusin"), document.querySelector("#c5 set")?.hasAttribute("onbegin"), window.ran ?? null, window.violations]),
+    p.errors.length, /onfocusin attributes are refused.*onbegin attributes are refused/.test(p.errors[0]),
+  ], [["3", false, false, null, []], 1, true]);
+  await p.close();
+}
+
+// <rhp-many-dots> under the strict nonce policy: ManyDots' own <style> (its collection's defaults) takes the page's
+// nonce, so it is allowed (no violation reported), for a chart in the markup and one added later
+{
+  const p = await newPage();
+  p.errors = []; p.on("pageerror", (e) => p.errors.push(e.message));
+  await p.addInitScript(() => {
+    window.violations = [];
+    document.addEventListener("securitypolicyviolation", (e) => window.violations.push((e.effectiveDirective || e.violatedDirective) + " " + e.blockedURI));
+  });
+  await p.route("http://rhp.test/**", (r) => {
+    const f = new URL(r.request().url()).pathname.slice(1);
+    if (f === "rhp-web.js") return r.fulfill({ path: at("out/rhp-web.js"), contentType: "text/javascript" });
+    if (f === "page.js") return r.fulfill({ contentType: "text/javascript", body: `import "./rhp-web.js";
+      window.addDots = () => document.body.insertAdjacentHTML("beforeend", '<rhp-chart id="m2" scale="[0, 10]" cross="[0, 10]" height="100"><rhp-many-dots rows=\\'[{"x": 4, "y": 4}]\\' at="x" cross="y"></rhp-many-dots></rhp-chart>');` });
+    r.fulfill({ contentType: "text/html", body: `<!doctype html><html><head><meta charset="utf-8">
+      <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'nonce-rhp4web'; style-src 'self' 'nonce-rhp4web'"></head><body>
+      <rhp-chart id="m1" scale="[0, 10]" cross="[0, 10]" height="100"><rhp-many-dots rows='[{"x": 2, "y": 3}, {"x": 5, "y": 6}]' at="x" cross="y"></rhp-many-dots></rhp-chart>
+      <script type="module" src="page.js" nonce="rhp4web"></script></body></html>` });
+  });
+  await p.goto("http://rhp.test/index.html"); await p.waitForTimeout(400);
+  await p.evaluate(() => setTimeout(() => window.addDots())); await p.waitForTimeout(300);
+  check("web CSP (strict, with a nonce): <rhp-many-dots>' own <style> takes the page's nonce, with no violation", [
+    await p.evaluate(() => [...document.querySelectorAll("style[data-rhp-manydots]")].map((s) => [s.sheet != null, s.nonce])),
+    await p.evaluate(() => document.querySelectorAll(".rhp-manydot").length),
+    await p.evaluate(() => window.violations),
+    p.errors,
+  ], [[[true, "rhp4web"], [true, "rhp4web"]], 3, [], []]);
+  await p.close();
+}
+
+// Web examples (web/examples): every page drawn from the build, as a reader opens it from a server at the repo root.
+// A page of examples (bar.html) has one tab bar (shell.js), one tab per way of writing slats (template, h, html), and
+// one or more <section class="example">, each one chart with its folder (data-name="bar/fruit"): its page.html, the
+// same for every tab, with two regions, the chart (between <!-- rhp:chart --> and <!-- /rhp:chart -->) and the code its
+// tabs share (between // rhp:slats and // /rhp:slats). A region has a named marker where the tabs differ
+// (<!-- slat-template:NAME --> in the chart, // slat-template:NAME in the code), filled by each tab's one file,
+// <variant>.md: a "## NAME" heading per marker and a fenced block with its part; what is the same on every tab is in
+// the page, with no marker. The shell puts the regions with the tab's parts back in the page and draws it in the
+// section's iframe, marking in the section's editor what the tab adds to each region.
+// Every tab draws the same chart, pixel for pixel. web/examples/ is served as the site's root, as npx serve
+// web/examples does; its out/ (rhp-web.js, posters.css, react.js, which web/examples/build.mjs makes) is built here into
+// test/out/examples/ and served from there.
+{
+  const examples = path.join(here, "../web/examples");
+  const { buildExamples } = await import("../web/examples/build.mjs");
+  await buildExamples(at("out/examples"));
+  const pages = fs.readdirSync(examples).filter((f) => f.endsWith(".html")).sort();
+  const source = (f) => fs.readFileSync(path.join(examples, f), "utf8");
+  // A page's sections: [{ name, variants, fallback }]
+  const sectionsOf = (f) => [...source(f).matchAll(/<section class="example" data-name="([^"]+)" data-variants="([^"]*)" data-default="([^"]*)"/g)]
+    .map((m) => ({ name: m[1], variants: m[2].split(/\s+/), fallback: m[3] }));
+  const shells = pages.filter((f) => sectionsOf(f).length);
+  const MARKS = ["<!-- rhp:chart -->", "<!-- /rhp:chart -->", "// rhp:slats", "// /rhp:slats"];
+  const exists = (f) => fs.existsSync(path.join(examples, f));
+  check("Web examples: index.html links every other page", pages.filter((f) => f !== "index.html" && !source("index.html").includes(`href="${f}"`)), []);
+  check("Web examples: every section of every example page has the three variants as tabs (template, h, html), the same default",
+    shells.flatMap((f) => sectionsOf(f).filter((s) => s.variants.join(" ") !== "template h html" || s.fallback !== sectionsOf(f)[0].fallback).map((s) => s.name)), []);
+  // A file's slat-template markers, <!-- slat-template:NAME --> in HTML and // slat-template:NAME in JS: their names
+  const SLOT = /^[ \t]*(?:<!-- slat-template(?::([\w-]+))? -->|\/\/ slat-template(?::([\w-]+))?)[ \t]*$/gm;
+  const slots = (t) => [...t.matchAll(SLOT)].map((m) => m[1] ?? m[2] ?? "");
+  const uncommented = (t) => t.replace(/<!--[\s\S]*?-->/g, "");
+  // A tab's <variant>.md as { NAME: part }: a "## NAME" heading per marker and the fenced block after it
+  const FENCED = /^## ([\w-]+)\n```(\w*)\n([\s\S]*?)\n```$/gm;
+  const partsOf = (t) => Object.fromEntries([...t.matchAll(FENCED)].map((m) => [m[1], m[3]]));
+  // A section's base files, and what each tab writes
+  // A section's two regions of its page.html, the chart's and the code's, as the page has them
+  const REGIONS = [["<!-- rhp:chart -->", "<!-- /rhp:chart -->"], ["// rhp:slats", "// /rhp:slats"]];
+  const regionOf = (name, k) => {
+    const lines = source(`${name}/page.html`).split("\n"), [open, close] = REGIONS[k];
+    const o = lines.findIndex((l) => l.trim() === open), c = lines.findIndex((l) => l.trim() === close);
+    return o < 0 || c < o ? "" : lines.slice(o + 1, c).join("\n");
+  };
+  const BASES = [0, 1];
+  const marked = (name) => BASES.map((k) => slots(regionOf(name, k)).length > 0);
+  const tabCode = (name, v) => {
+    const parts = exists(`${name}/${v}.md`) ? partsOf(source(`${name}/${v}.md`)) : {};
+    return regionOf(name, 1).split("\n").flatMap((l) => {
+      const m = new RegExp(SLOT.source).exec(l);
+      return m ? [parts[m[1] ?? m[2] ?? ""] ?? ""] : [l];
+    }).join("\n");
+  };
+  check("Web examples: every example folder has a page.html with each region marker once, a base chart with one chart and named markers, and per tab one .md whose parts (a heading and a fenced block each) fill the bases' markers (every marker of the chart, no chart markup), formatted, and no marker with the same part on every tab", shells.flatMap((f) => sectionsOf(f).flatMap(({ name, variants }) => {
+    const bad = [];
+    if (!exists(`${name}/page.html`)) return [`${name}/page.html missing`];
+    if (uncommented(regionOf(name, 0)).match(/<rhp-chart[\s>]/g)?.length !== 1) bad.push(`${name}/page.html: its chart region does not hold one chart`);
+    const lines = source(`${name}/page.html`).split("\n");
+    for (const m of MARKS) if (lines.filter((l) => l.trim() === m).length !== 1) bad.push(`${name}/page.html: ${m}`);
+    const [chartPlaces, codePlaces] = BASES.map((k) => [...new Set(slots(regionOf(name, k)))]);
+    const places = [...chartPlaces, ...codePlaces];
+    if (places.includes("")) bad.push(`${name}: a marker with no name`);
+    if (chartPlaces.some((n) => codePlaces.includes(n))) bad.push(`${name}: a name marks both the chart and the code`);
+    const parts = {};
+    for (const v of variants) {
+      const p = `${name}/${v}.md`;
+      if (!exists(p)) {
+        if (places.length) bad.push(`${p} missing`);
+        parts[v] = {};
+        continue;
+      }
+      if (!places.length) bad.push(`${p}: the bases have no marker`);
+      const t = source(p);
+      if (!t.endsWith("\n") || t.endsWith("\n\n") || /[ \t]$/m.test(t) || /^\t/m.test(t)) bad.push(`${p} not formatted`);
+      if (t.replace(FENCED, "").trim()) bad.push(`${p} holds more than headings and fenced blocks`);
+      parts[v] = partsOf(t);
+      for (const m of t.matchAll(FENCED)) if (m[2] !== (chartPlaces.includes(m[1]) ? "html" : "js")) bad.push(`${p}: ${m[1]} is not fenced as ${chartPlaces.includes(m[1]) ? "html" : "js"}`);
+      if (Object.keys(parts[v]).some((n) => !places.includes(n))) bad.push(`${p}: parts ${Object.keys(parts[v])} for markers ${places}`);
+      if (chartPlaces.some((n) => !parts[v][n])) bad.push(`${p} leaves a marker of the chart empty`);
+      if (chartPlaces.some((n) => /<rhp-(chart|plot|scale)[\s>]/.test(uncommented(parts[v][n] ?? "")))) bad.push(`${p} has chart markup`);
+    }
+    for (const n of places) if (new Set(variants.map((v) => parts[v][n] ?? "")).size === 1) bad.push(`${name}: the marker ${n} has the same part on every tab`);
+    return bad;
+  })), []);
+  const scripts = (d) => fs.readdirSync(path.join(examples, d), { withFileTypes: true }).flatMap((e) => {
+    const f = path.join(d, e.name);
+    return e.isDirectory() ? (["vendor", "out"].includes(e.name) ? [] : scripts(f)) : /\.(html|jsx?|md)$/.test(e.name) && e.name !== "README.md" ? [f] : [];
+  });
+  check("Web examples: only the html tabs' slats import html (the others write slats with h, or as markup)",
+    scripts("").filter((f) => path.basename(f) !== "html.md" && /import\s*\{[^}]*\bhtml\b[^}]*\}\s*from\s*["']@shashank1010\/rhp-web["']/.test(source(f))), []);
+  const types = { ".js": "text/javascript", ".css": "text/css", ".html": "text/html", ".json": "application/json", ".svg": "image/svg+xml" };
+  // A page of the examples, web/examples/ served as the root
+  const openExample = async (f, viewport = { width: 900, height: 900 }) => {
+    const p = await newPage({ viewport });
+    p.errors = []; p.on("pageerror", (e) => p.errors.push(e.message));
+    await p.route("**/*", (r) => {
+      const url = new URL(r.request().url());
+      if (url.host !== "rhp.test") return r.abort();
+      const name = decodeURIComponent(url.pathname);
+      const file = name.includes("..") ? null : name.startsWith("/out/") ? at("out/examples/" + name.slice("/out/".length)) : path.join(examples, name);
+      if (!file || !fs.existsSync(file)) return r.fulfill({ status: 404, body: "not found" });
+      r.fulfill({ path: file, contentType: types[path.extname(file)] ?? "application/octet-stream" });
+    });
+    await p.goto("http://rhp.test/" + f); await p.waitForTimeout(500);
+    return p;
+  };
+  // What each section's iframe drew, once its render has loaded and its charts and rows are there (or 3 s have
+  // passed): its tab, its charts, those that drew a .rhp-chart, its slat rows, and whether it shows a refusal (csp).
+  // still: the page's timers are stopped as soon as it loads (live's random walk), for a picture of its first frame.
+  const inFrames = (p, still = false) => p.evaluate(async (still) => Promise.all(window.rhpExamples.map(async (x) => {
+    await x.ready;
+    if (still) for (let i = 1; i < 1000; i++) x.iframe.contentWindow.clearInterval(i);
+    let g;
+    for (let t = 0; t < 30; t++) {
+      const doc = x.iframe.contentDocument;
+      g = [doc.querySelectorAll("rhp-chart").length, doc.querySelectorAll("rhp-chart .rhp-chart").length, doc.querySelectorAll("[data-rhp-slat]").length,
+        doc.querySelector("#refused:not([hidden]) li") != null];
+      if (g[0] > 0 && g[1] === g[0] && g[2] > 0) break;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    return [x.variant, ...g];
+  })), still);
+  // refused: a csp tab the policy refuses, whose charts draw with no rows from the slat it left out
+  const drew = ([, charts, drawn, rows], refused = false) => charts > 0 && drawn === charts && (refused || rows > 0);
+  const tab = (p, v) => p.click(`.tabs [data-variant="${v}"]`).then(() => p.waitForFunction((v) => window.rhpExamples.every((x) => x.variant === v), v));
+  // csp's html tab compiles code (solid-js/html) with new Function, which its policy refuses
+  const refusedHere = (name, v) => name === "csp" && v === "html";
+  // Whether one of a section's two editors (k: 0 chart.html, 1 slats.js) marks changes: its merge view's first chunk
+  // scrolled into view, and that line highlighted
+  const merged = (p, i, k) => p.evaluate(async ([i, k]) => {
+    const { getChunks, EditorView } = await import("./vendor/codemirror.js"), view = window.rhpExamples[i].views[k], chunk = getChunks(view.state)?.chunks[0];
+    if (chunk) {
+      view.dispatch({ effects: EditorView.scrollIntoView(chunk.fromB, { y: "center" }) });
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    }
+    return view.dom.querySelector(".cm-changedLine, .cm-insertedLine") != null;
+  }, [i, k]);
+  // A section's iframe as a picture, once two pictures 300 ms apart are the same (its bars have stopped moving). The
+  // picture is of the page in the iframe, with no rounded corners of the iframe's own (antialiased against the page
+  // behind, they change with the scroll position), and with no tab's notes above it (they move it by a fraction of a
+  // pixel from tab to tab).
+  const picture = async (p, i) => {
+    await p.addStyleTag({ content: "section.example iframe { border: 0; border-radius: 0; } section.example .notes { display: none; }" });
+    const frame = p.locator("section.example iframe").nth(i);
+    let last = await frame.screenshot();
+    for (let t = 0; t < 10; t++) {
+      await p.waitForTimeout(300);
+      const next = await frame.screenshot();
+      if (next.equals(last)) return next;
+      last = next;
+    }
+    return last;
+  };
+
+  // Two pictures alike: the same size, and no pixel more than 24 of 255 apart in any channel (the antialiasing of an
+  // edge can differ by that much between two drawings of the same DOM; a moved edge, another colour or other text is
+  // much further apart)
+  const alike = (p, a, b) => a.equals(b) || p.evaluate(async ([a, b]) => {
+    const data = async (src) => {
+      const img = new Image();
+      img.src = "data:image/png;base64," + src;
+      await img.decode();
+      const c = new OffscreenCanvas(img.width, img.height), g = c.getContext("2d");
+      g.drawImage(img, 0, 0);
+      return g.getImageData(0, 0, img.width, img.height);
+    };
+    const [x, y] = await Promise.all([data(a), data(b)]);
+    if (x.width !== y.width || x.height !== y.height) return false;
+    for (let i = 0; i < x.data.length; i++) if (Math.abs(x.data[i] - y.data[i]) > 24) return false;
+    return true;
+  }, [a.toString("base64"), b.toString("base64")]);
+
+  for (const f of shells) {
+    const secs = sectionsOf(f), names = secs.map((s) => s.name), variants = secs[0].variants;
+    const p = await openExample(f, { width: 1280, height: 800 });
+    const opened = await inFrames(p);
+    check(`Web examples (${f}): the default tab draws in every section's iframe`, opened.map((g) => [g[0], drew(g)]), secs.map((s) => [s.fallback, true]));
+    // Every tab: what each section draws (csp: the html tab shows what the policy refuses, and its errors are that
+    // refusal), its files (slats.js where it holds more than the import; the first that differs between tabs open), and
+    // its picture
+    const tabs = [], want = [], pictures = names.map(() => ({}));
+    for (const v of variants) {
+      const errors = p.errors.length;
+      await tab(p, v);
+      const gs = await inFrames(p, true), added = p.errors.slice(errors);
+      const refused = names.some((n) => refusedHere(n, v));
+      // Each section's panes, chart.html above slats.js, a file the same on every tab read-only
+      const shown = await p.evaluate(() => [...document.querySelectorAll("section.example")].map((s) =>
+        [...s.querySelectorAll(".file:not([hidden])")].map((x) => x.dataset.file + (x.querySelector(".same").hidden ? "" : " (same)")).join(", ")));
+      for (const [i, n] of names.entries()) {
+        tabs.push([n, v, drew(gs[i], refusedHere(n, v)), gs[i][4], shown[i]]);
+        const code = tabCode(n, v);
+        const slats = code.replace(/import\b[^;]*;|^\s*\/\/ slat-template.*$/gm, "").trim() !== "";
+        const same = (k) => (marked(n)[k] ? "" : " (same)");
+        want.push([n, v, true, refusedHere(n, v), `chart.html${same(0)}` + (slats ? `, slats.js${same(1)}` : "")]);
+        if (!refusedHere(n, v)) pictures[i][v] = await picture(p, i);
+      }
+      tabs.push([v, refused ? added.length > 0 && added.every((e) => /unsafe-eval/.test(e)) : added]);
+      want.push([v, refused ? true : []]);
+    }
+    check(`Web examples (${f}): every tab clicked switches every section and draws in its iframe${f === "csp.html" ? " (html shows the refusal)" : ""}, with chart.html above its slats.js, a file the same on every tab read-only`, tabs, want);
+    const unlike = [];
+    for (const [i, n] of names.entries()) for (const [v, b] of Object.entries(pictures[i])) if (!(await alike(p, b, pictures[i].h))) unlike.push(`${n} ${v}`);
+    check(`Web examples (${f}): every section draws the same picture on every tab${f === "csp.html" ? " (but the refused one)" : ""}`, unlike, []);
+
+    // The diff against the base: on every tab, each section's file that differs between tabs is marked where it adds to
+    // its base, and a file the same on every tab has no marks; "Changes vs base" toggles the marks
+    const diffed = [], wanted = [];
+    for (const v of variants) {
+      await tab(p, v); await inFrames(p);
+      for (const [i, n] of names.entries()) {
+        const s = p.locator("section.example").nth(i);
+        for (const [k, name] of ["chart.html", "slats.js"].entries()) {
+          if (await s.locator(`.file[data-file="${name}"]`).isHidden()) continue;
+          diffed.push([n, v, name, await merged(p, i, k)]);
+          wanted.push([n, v, name, marked(n)[k]]);
+        }
+      }
+    }
+    const first = names.findIndex((n) => marked(n).some(Boolean));
+    if (first >= 0) {
+      const s = p.locator("section.example").nth(first), k = marked(names[first]).indexOf(true);
+      await p.click(".tabs .diff input"); diffed.push(["off", await merged(p, first, k)]);
+      await p.click(".tabs .diff input"); diffed.push(["on", await merged(p, first, k)]);
+      wanted.push(["off", false], ["on", true]);
+    }
+    check(`Web examples (${f}): every section marks on every tab what a file that differs between tabs adds to its base, none on a file the same on every tab, and "Changes vs base" (in the page's bar) toggles the marks`, diffed, wanted);
+
+    // An edit: a paragraph added by the first section's chart.html, or, where its chart is the same on every tab (then
+    // read-only: an edit to it changes nothing), by the end of its slats.js, drawn in its iframe 400 ms after it, kept by
+    // the tab, and dropped by Reset
+    const k = marked(names[0])[0] ? 0 : 1, chartFile = ["chart.html", "slats.js"][k];
+    const insert = k === 0 ? '<p id="edited">Edited 4321</p>\n' : `\ndocument.body.insertAdjacentHTML("beforeend", '<p id="edited">Edited 4321</p>');\n`;
+    const doc = (k) => p.evaluate((k) => window.rhpExamples[0].views[k].state.doc.toString(), k);
+    await tab(p, "h"); await inFrames(p);
+    if (k === 1) {
+      const before = await doc(0);
+      await p.evaluate(() => window.rhpExamples[0].views[0].dispatch({ changes: { from: 0, insert: "<b>changed</b>" } }));
+      check(`Web examples (${f}): a chart.html the same on every tab is read-only`, (await doc(0)) === before, true);
+    }
+    const original = await doc(k);
+    const typed = () => p.evaluate(() => window.rhpExamples[0].iframe.contentDocument.querySelector("#edited")?.textContent ?? null);
+    await p.evaluate(([k, insert]) => { const v = window.rhpExamples[0].views[k]; v.dispatch({ changes: { from: k ? v.state.doc.length : 0, insert } }); }, [k, insert]);
+    await p.waitForTimeout(100);
+    const early = await typed();
+    const [g] = await inFrames(p);
+    const edited = await typed();
+    await tab(p, "template"); await tab(p, "h");
+    const kept = (await doc(k)).includes('<p id="edited">Edited 4321</p>');
+    await p.click(".tabs .reset"); await inFrames(p);
+    const reset = await doc(k);
+    check(`Web examples (${f}): an edit to ${chartFile} redraws the iframe 400 ms after it, the tab keeps it, and Reset brings back the files`,
+      [early, edited, drew(g), kept, reset === original, await typed()], [null, "Edited 4321", true, true, true, null]);
+    if (f === "live.html") {
+      const bars = () => p.evaluate(() => [...window.rhpExamples[0].iframe.contentDocument.querySelectorAll("[data-rhp-slat] .rhp-bar")].map((b) => b.style.getPropertyValue("--rhp-to")).join(" "));
+      const before = await bars();
+      let after = before;
+      for (let t = 0; t < 15 && after === before; t++) {
+        await p.waitForTimeout(100);
+        after = await bars();
+      }
+      check(`Web examples (${f}): a bar's --rhp-to changes within 1.5 s`, [before !== "", after !== before], [true, true]);
+    }
+    check(`Web examples (${f}): no page errors`, p.errors.filter((e) => !(f === "csp.html" && /unsafe-eval/.test(e))), []);
+    await p.close();
+
+    const q = await openExample(f + "#template");
+    const t = await inFrames(q);
+    check(`Web examples (${f}#template): a link to a tab opens that tab in every section`, t.map((g) => [g[0], drew(g)]), names.map(() => ["template", true]));
+    await q.close();
+  }
+
+  // The pages that are not examples with tabs
+  for (const f of pages.filter((f) => !shells.includes(f))) {
+    const p = await openExample(f);
+    if (f === "react.html") {
+      const rows = () => p.evaluate(() => [...document.querySelectorAll("rhp-chart [data-rhp-slat]")].map((r) => r.textContent).join(" | "));
+      const before = await rows();
+      await p.click("button#add"); await p.waitForTimeout(300);
+      const after = await rows();
+      check("Web examples (react.html): React's state reaches the plot as a property, and clicking Add draws one more row", [
+        before,
+        after.startsWith(before + " | ") && after.split(" | ").length === before.split(" | ").length + 1,
+        await p.evaluate(() => document.querySelector("rhp-plot").hasAttribute("sold")),
+        p.errors,
+      ], ["Apples12 | Bananas18 | Cherries7", true, false, []]);
+    } else {
+      check(`Web examples (${f}): no page errors`, p.errors, []);
+    }
+    await p.close();
+  }
+}
+
+// The web package as it would be published: rhp-web.js is ASCII (it reads the same in any charset), the package ships
+// rhp's license, and its @bezda/rhp range starts at a release that has every rhp export it imports
+{
+  const web = path.join(here, "../web");
+  check("web build: rhp-web.js is ASCII only", [...fs.readFileSync(at("out/rhp-web.js"))].findIndex((b) => b > 0x7f), -1);
+  let packed = [];
+  try {
+    packed = JSON.parse(execFileSync("npm", ["pack", "--dry-run", "--json"], { cwd: web, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }))[0].files.map((f) => f.path);
+  } catch (e) {
+    packed = [e.message];
+  }
+  check("web package: web/LICENSE is rhp's LICENSE, and npm pack includes it", [fs.readFileSync(path.join(web, "LICENSE"), "utf8") === fs.readFileSync(path.join(here, "../LICENSE"), "utf8"), packed.includes("LICENSE")], [true, true]);
+  // The first @bezda/rhp release that exports each name added after 2.0.2 (2.0.2 has no ManyDots)
+  const FIRST = { ManyDots: "2.0.3", ManyDotsValue: "2.0.3", ManyDotsProps: "2.0.3" };
+  const files = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? files(path.join(d, e.name)) : e.name.endsWith(".js") ? [path.join(d, e.name)] : []));
+  const imported = new Set();
+  for (const f of [...files(path.join(web, "src")), path.join(web, "index.d.ts")]) {
+    for (const m of fs.readFileSync(f, "utf8").matchAll(/import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*"@bezda\/rhp"/g)) {
+      m[1].split(",").map((n) => n.trim().split(/\s+as\s+/)[0]).filter(Boolean).forEach((n) => imported.add(n));
+    }
+  }
+  const range = JSON.parse(fs.readFileSync(path.join(web, "package.json"), "utf8")).dependencies["@bezda/rhp"];
+  const floor = /^\^(\d+\.\d+\.\d+)$/.exec(range)?.[1] ?? "0.0.0";
+  const below = (a, b) => { const x = a.split(".").map(Number), y = b.split(".").map(Number); return x[0] - y[0] || x[1] - y[1] || x[2] - y[2]; };
+  check("web package: its @bezda/rhp range starts at a release with every rhp export it imports (ManyDots: 2.0.3)", [imported.has("ManyDots"), [...imported].filter((n) => FIRST[n] && below(floor, FIRST[n]) < 0)], [true, []]);
 }
 
 // Update cost (test/cost.jsx): 1,000 slats per Plot, one value changed

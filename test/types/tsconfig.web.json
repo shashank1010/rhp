@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "noEmit": true,
+    "target": "es2020",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "skipLibCheck": true,
+    "types": [],
+    "paths": {
+      "@shashank1010/rhp-web": [
+        "../../web/index.d.ts"
+      ],
+      "@bezda/rhp": [
+        "../../src/index.d.ts"
+      ],
+      "@bezda/rhp/standalone": [
+        "../../src/standalone.d.ts"
+      ]
+    }
+  },
+  "files": [
+    "web.ts"
+  ]
+}
