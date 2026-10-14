@@ -1,0 +1,59 @@
+{
+  "name": "@shashank1010/rhp-web",
+  "version": "0.1.0",
+  "description": "rhp charts as web components: <rhp-chart>, <rhp-plot> and slats made with slat()",
+  "keywords": [
+    "web-components",
+    "custom-elements",
+    "charts",
+    "plots",
+    "html",
+    "css",
+    "solidjs"
+  ],
+  "author": {
+    "name": "Bouzid Anas",
+    "email": "anas.bouzid@bezda.net"
+  },
+  "license": "MIT",
+  "homepage": "https://rhp.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bezda-team/rhp",
+    "directory": "web"
+  },
+  "type": "module",
+  "sideEffects": [
+    "./src/index.js",
+    "./src/helpers.js",
+    "./src/elements/*.js",
+    "./dist/rhp-web.js",
+    "*.css"
+  ],
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./standalone": {
+      "types": "./index.d.ts",
+      "default": "./dist/rhp-web.js"
+    },
+    "./posters.css": "./dist/posters.css"
+  },
+  "files": [
+    "src",
+    "dist",
+    "index.d.ts"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "examples": "node examples/build.mjs",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@bezda/rhp": "^2.0.3",
+    "solid-js": "^1.9.15"
+  }
+}
