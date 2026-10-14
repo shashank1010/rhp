@@ -2,6 +2,7 @@
 import { build, transform } from "esbuild";
 import { transformAsync } from "@babel/core";
 import fs from "fs";
+import { pathToFileURL } from "url";
 
 // JSX for the browser, or for a server with { generate: "ssr" }. hydratable means it can also take over a server's HTML.
 // In rhp's own files, isServer (src/env.js) becomes a constant, so the build drops the code for the other side.
@@ -34,6 +35,21 @@ const cssText = {
     });
   },
 };
+
+// Every solid-js import resolves as it does from `dir`, so a bundle holds one Solid even when a package in it has a
+// solid-js of its own (web/node_modules/solid-js after an npm link there): rhp's components and the code around them
+// must share one Solid, or contexts and owners don't connect
+export const oneSolid = (dir) => ({
+  name: "one-solid",
+  setup(b) {
+    b.onResolve({ filter: /^solid-js(\/|$)/ }, async (a) => {
+      if (a.pluginData?.oneSolid) return undefined;
+      const r = await b.resolve(a.path, { kind: a.kind, resolveDir: dir, pluginData: { oneSolid: true } });
+      if (r.errors.length) return { errors: r.errors };
+      return { path: r.path, namespace: r.namespace, external: r.external, sideEffects: r.sideEffects };
+    });
+  },
+});
 
 // A CSS file minified, as style.js embeds it
 export const minifiedCss = async (file) => {
@@ -76,14 +92,16 @@ export const page = (entry, outfile) => build({
 });
 
 // rhp and Solid in one minified module, for pages with no build step
-// Solid's MIT license asks for its notice in every copy, and this file has Solid in it
-const solidNotice = () => {
-  const dir = new URL("../node_modules/solid-js/", import.meta.url);
+// Solid's MIT license asks for its notice in every copy, and this file has Solid in it. dir: the solid-js package that
+// is bundled (a URL or a path; the one in this repo's node_modules by default).
+export const solidNotice = (dir = new URL("../node_modules/solid-js/", import.meta.url)) => {
+  if (typeof dir === "string") dir = pathToFileURL(dir.replace(/[\\/]?$/, "/"));
   const { version } = JSON.parse(fs.readFileSync(new URL("package.json", dir), "utf8"));
   return `/*! Includes Solid ${version} (https://github.com/solidjs/solid):\n\n${fs.readFileSync(new URL("LICENSE", dir), "utf8").trim()}\n*/`;
 };
 
-export const standalone = (entry, outfile) => build({
+// options: esbuild options over these (web/scripts/build.mjs gives its own plugins and banner)
+export const standalone = (entry, outfile, options = {}) => build({
   entryPoints: [entry],
   outfile,
   bundle: true,
@@ -95,6 +113,7 @@ export const standalone = (entry, outfile) => build({
   define: { "process.env.NODE_ENV": '"production"' },
   banner: { js: solidNotice() },
   logLevel: "warning",
+  ...options,
 });
 
 // The package: one module for the browser (it can take over a server's HTML) and one for a server. Solid is left to the app.
@@ -175,3 +194,6 @@ export const ssrPackage = (entry, outfile, side) => {
     plugins: [usePackage, jsx(side === "server" ? { generate: "ssr", hydratable: true } : { hydratable: true }), cssText],
   });
 };
+
+// The JSX and CSS-text plugins, for builds that compile rhp's src (the web components' test page)
+export { jsx, cssText };
