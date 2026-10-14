@@ -1,0 +1,49 @@
+/* The page around the examples (shell.js): the page's tabs, and per example the editor with its files on the left
+   and the drawn page on the right, stacked below 900px */
+body { margin: 0; padding: 32px 16px; background: #f6f4ef; color: #1d1b18; font: 15px/1.5 system-ui, sans-serif; }
+main { max-width: 1440px; margin: 0 auto; }
+main > a { color: #a2461a; font-size: 13px; }
+h1 { margin: 4px 0; font-size: 26px; }
+main > p { margin: 0 0 20px; max-width: 760px; color: #5d5850; }
+.example { margin-top: 24px; }
+.example h2 { margin: 0 0 8px; font-size: 18px; }
+.example .notes { max-width: 760px; margin: 0 0 12px; color: #5d5850; font-size: 14px; }
+.example .notes p { margin: 0 0 6px; }
+code { font-size: 13px; }
+
+/* The page's bar, kept at the top: segment buttons for the tabs, "Changes vs base" and Reset */
+.tabs { position: sticky; top: 0; z-index: 10; display: flex; gap: 16px; align-items: center; margin: 0 -16px;
+  padding: 10px 16px; background: #f6f4ef; border-bottom: 1px solid #ddd8cd; }
+.segments { display: inline-flex; padding: 3px; gap: 2px; border-radius: 8px; background: #e8e4da; }
+.segments button { font: inherit; font-weight: 600; padding: 4px 16px; border: 0; border-radius: 6px; background: none;
+  color: #5d5850; cursor: pointer; }
+.segments button[aria-selected="true"] { background: #fff; color: #a2461a; box-shadow: 0 1px 2px rgb(0 0 0 / 15%); }
+.segments button:focus-visible { outline: 2px solid #a2461a; outline-offset: 1px; }
+.tabs .diff { display: flex; gap: 6px; align-items: center; color: #5d5850; font-size: 14px; cursor: pointer; }
+.tabs .reset { margin-left: auto; padding: 3px 12px; border: 1px solid #b9b2a4; border-radius: 4px; background: #fff;
+  font: inherit; font-size: 14px; cursor: pointer; }
+
+.panes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; padding-top: 16px; align-items: start; }
+.code { position: sticky; top: 64px; height: calc(100vh - 80px); display: flex; flex-direction: column;
+  border-radius: 6px; overflow: hidden; background: #282c34; }
+/* chart.html above slats.js: the chart as tall as it is (up to half), slats.js the rest */
+.file { display: flex; flex-direction: column; min-height: 0; }
+.file[data-file="chart.html"] { flex: 0 1 auto; max-height: 50%; }
+.file[data-file="slats.js"] { flex: 1 1 0; }
+.file[hidden] { display: none; }
+.file + .file { border-top: 1px solid #3b4048; }
+.file .name { padding: 4px 12px; background: #21252b; color: #e6e6e6; font: 13px ui-monospace, monospace; }
+.file .same { margin-left: 10px; color: #7f8794; font: 12px system-ui, sans-serif; }
+.file .holder { flex: 1 1 auto; min-height: 0; display: flex; }
+.file .cm-editor { flex: 1; min-width: 0; max-height: 100%; font-size: 13px; }
+.file[data-file="slats.js"] .cm-editor { height: 100%; }
+/* A change within a line: the changed text filled over its whole height (not the 2px underline), light enough to
+   read through; a change that is the whole line has the line's mark alone */
+.file .cm-editor.cm-merge-b .cm-changedText { background: rgb(136 255 136 / 28%); border-radius: 2px; }
+.file .cm-editor.cm-merge-b .cm-changedText:only-child { background: none; }
+iframe { width: 100%; min-height: 400px; border: 1px solid #ddd8cd; border-radius: 6px; background: #fff; display: block; }
+
+@media (max-width: 900px) {
+  .panes { grid-template-columns: minmax(0, 1fr); }
+  .code { position: static; height: 60vh; }
+}

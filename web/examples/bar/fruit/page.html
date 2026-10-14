@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bar chart</title>
+<!--
+  The README's bar chart. <rhp-chart> and <rhp-plot> are markup, each attribute of the plot that is not a setting is a
+  column (a JSON list), and order="sortBy:pounds:desc" ranks the rows. A row is a name, a bar in a tone (above 15
+  pounds or not) and its value, with CSS scoped to its rows. The scale's ticks are a slat
+  too, one per tick (its d has at): its CSS puts the numbers below the rows, and room='{"after": 26}' on <rhp-scale>
+  keeps space for them, as on <rhp-plot>.
+  The page of every tab of the example: the chart between the rhp:chart markers and the code its tabs share between
+  the rhp:slats markers, with each tab's parts (h.md, ...) at their slat-template markers, put in by the example's page
+  (../../bar.html).
+  To load the package from a CDN, point the import map at https://cdn.jsdelivr.net/npm/@shashank1010/rhp-web/dist/rhp-web.js
+-->
+<script type="importmap">{ "imports": { "@shashank1010/rhp-web": "../../out/rhp-web.js", "@shashank1010/rhp-web/posters.css": "../../out/posters.css" } }</script>
+<style>
+  body { margin: 0; padding: 40px 16px; background: #f6f4ef; color: #1d1b18; font: 15px/1.5 system-ui, sans-serif; }
+  main { max-width: 680px; margin: 0 auto; }
+  h1 { margin: 0 0 4px; font-size: 26px; }
+  h2 { margin: 40px 0 4px; font-size: 18px; }
+  p { margin: 0 0 18px; color: #5d5850; }
+  small { display: block; margin-top: 10px; color: #8a8478; font-size: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Bananas lead the fruit bowl</h1>
+  <p>Fresh fruit available per American in a year, in pounds. Above 15 pounds is in the darker tone.</p>
+  <!-- rhp:chart -->
+  <rhp-chart scale="[0, 30]" label="Fresh fruit per American in a year, pounds">
+    <rhp-scale ticks="every:10" room='{"after": 26}'>
+      <!-- slat-template:scale -->
+    </rhp-scale>
+    <rhp-plot order="sortBy:pounds:desc"
+      name='["Apples", "Bananas", "Grapes", "Oranges", "Strawberries", "Watermelon"]'
+      pounds="[16.3, 26.8, 7.8, 7.6, 8.1, 15.0]">
+      <template><food-row></food-row></template>
+    </rhp-plot>
+  </rhp-chart>
+  <!-- /rhp:chart -->
+  <small>Source: USDA Economic Research Service, food availability per capita, 2019 (rounded).</small>
+</main>
+
+<script type="module">
+// rhp:slats
+// slat-template:import
+
+// slat-template:about
+slat("food-row", {
+  thickness: 32,
+  inset: 0.18,
+  room: { start: 110, end: 48 },
+  css: `
+    .rhp-bar { border-radius: 0 3px 3px 0; }
+    .lead { background: #d9822b; }
+    .rest { background: #ecbf8f; }
+    .name { font-weight: 600; }
+    .value { font-variant-numeric: tabular-nums; color: #5d5850; }
+  `,
+  // slat-template:settings
+},
+// slat-template:row
+);
+
+// slat-template:more
+// /rhp:slats
+</script>
+</body>
+</html>

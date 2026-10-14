@@ -1,0 +1,33 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daylight by latitude</title><link rel="stylesheet" href="shell.css"></head>
+<body><main>
+  <h1>Daylight by latitude</h1><p>Daylight on 21 June in nine cities, with a sparkline of daylight through the year in each row, and the year's average. It shows slats made of block elements (&lt;rhp-bar&gt;, &lt;rhp-label&gt;, &lt;rhp-line&gt;, &lt;rhp-place&gt;, &lt;rhp-cell&gt;, &lt;rhp-dot&gt; ...), and in the h tab a slat written as a class extending RhpSlat.</p>
+  <section class="example" data-name="blocks/cities" data-variants="template h html" data-default="h">
+    <h2>21 June, nine cities</h2>
+    <div class="notes" data-variant="h">
+      <p>The block elements made with <code>h("rhp-label")</code>, <code>h("rhp-bar")</code> ...: h sets each prop on the element as a property, and <code>() =&gt; ...</code> keeps it live.</p>
+      <p>The arrow tip is a <code>shape()</code> result, given to each <code>&lt;rhp-bar&gt;</code> as a property. A Place draws nothing: what is inside it sits at its value, and <code>across</code> (0 at the top) places it in the band.</p>
+    </div>
+    <div class="notes" data-variant="html">
+      <p><code>html``</code> with the block elements as tags: html sets each hole on the element as a property. A hole that reads the row is a function (<code>${() =&gt; d.value}</code>), so the block follows the data; <code>html``</code> needs <code>'unsafe-eval'</code> under a Content-Security-Policy.</p>
+      <p>The arrow tip is a <code>shape()</code> result, given to each <code>&lt;rhp-bar&gt;</code> as a hole. A Place draws nothing: what is inside it sits at its value, and <code>across</code> (0 at the top) places it in the band.</p>
+    </div>
+    <div class="notes" data-variant="template">
+      <p>Template strings with <code>{bindings}</code>. A binding is a path (<code>{value}</code>, <code>{june[0]}</code>); what has to be computed (<code>{tone}</code>, <code>{rounded}</code>) is a helper, <code>(d) =&gt; value</code>, read by name like a column.</p>
+      <p>The slat is built from block elements: each attribute is the block's prop, and a <code>{binding}</code> keeps it live. The arrow tip is a <code>shape()</code> result, given to each <code>&lt;rhp-bar&gt;</code> through a helper (an attribute is a string).</p>
+      <p><code>rounded</code> is one text, as h writes it (<code>"{rounded} h"</code> would be two text nodes, shaped apart). A Place draws nothing: what is inside it sits at its value, and <code>across</code> (0 at the top) places it in the band.</p>
+    </div>
+  </section>
+  <section class="example" data-name="blocks/total" data-variants="template h html" data-default="h">
+    <h2>The year's average</h2>
+    <div class="notes" data-variant="h">
+      <p>The slat written as a class extending <code>RhpSlat</code>: layout and CSS as static fields, and <code>draw(d)</code>, made of <code>h(...)</code> calls, for the row's content.</p>
+    </div>
+    <div class="notes" data-variant="html">
+      <p>Block elements and rhp's components (<code>&lt;${Label}&gt;</code>) in one <code>html``</code> template. A hole that reads the row is a function, so the block follows the data; <code>html``</code> needs <code>'unsafe-eval'</code> under a Content-Security-Policy.</p>
+    </div>
+    <div class="notes" data-variant="template">
+      <p>A template string with <code>{bindings}</code>. A binding is a path (<code>{value}</code>); what has to be computed (<code>{rounded}</code>) is a helper, <code>(d) =&gt; value</code>, read by name like a column. A Cell sits behind the row, a Dot at the bar's end.</p>
+    </div>
+  </section>
+</main><script type="module" src="shell.js"></script></body></html>

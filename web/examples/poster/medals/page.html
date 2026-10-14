@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paris 2024 medals</title>
+<!-- An <rhp-theme> around an <rhp-poster> with the "watch" look from posters.css: parts given as attributes (kicker,
+     dek) and as slotted children (title, note). Each nation's row stacks gold, silver and bronze. -->
+<script type="importmap">{ "imports": { "@shashank1010/rhp-web": "../../out/rhp-web.js", "@shashank1010/rhp-web/posters.css": "../../out/posters.css" } }</script>
+<link rel="stylesheet" href="../../out/posters.css">
+<style>
+  body { margin: 0; padding: 32px 16px; background: #1b1e24; font: 15px/1.5 system-ui, sans-serif; }
+  rhp-theme { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 20px; max-width: 980px; margin: 0 auto; }
+  rhp-poster { display: block; }
+  .poster .headline em { font-style: normal; color: #f5c84c; }
+  .poster .note a { color: inherit; }
+  .keys { margin: -6px 0 10px; }
+  .keys .gold { background: #f5c84c; } .keys .silver { background: #c8cfdc; } .keys .bronze { background: #d4874a; }
+</style>
+</head>
+<body>
+
+<!-- rhp:chart -->
+<rhp-theme series='["#f5c84c", "#c8cfdc", "#d4874a", "#8fb3ff"]' ink="#eef1f8" muted="#9aa3b8" grid="rgb(238 241 248 / .14)" negative="#ff7a8c">
+  <rhp-poster look="watch" kicker="Paris 2024 · medal table" dek="The ten nations with the most golds, ranked by golds as the official table is.">
+    <span slot="title">The US and China tied on <em>40 golds</em></span>
+    <p class="keys"><span><i class="gold"></i>Gold</span><span><i class="silver"></i>Silver</span><span><i class="bronze"></i>Bronze</span></p>
+    <rhp-chart id="medals" scale="[0, 130]" ticks="every:25" label="Medals won at Paris 2024 by the ten nations with the most golds">
+      <rhp-plot id="table">
+        <template><medal-row></medal-row></template>
+      </rhp-plot>
+    </rhp-chart>
+    <span slot="note">Source: <a href="https://olympics.com/en/paris-2024/medals">olympics.com</a>, final medal table.</span>
+  </rhp-poster>
+</rhp-theme>
+<!-- /rhp:chart -->
+
+<script type="module">
+// rhp:slats
+// slat-template:import
+
+// slat-template:about
+slat("medal-row", {
+  thickness: 28,
+  room: { start: 104, end: 36 },
+  css: ".part { --rhp-radius: 0px; }",
+  // slat-template:settings
+},
+// slat-template:row
+);
+// /rhp:slats
+
+// Data: gold, silver, bronze for the top ten of the Paris 2024 table
+const TABLE = [["United States", 40, 44, 42], ["China", 40, 27, 24], ["Japan", 20, 12, 13], ["Australia", 18, 19, 16],
+  ["France", 16, 26, 22], ["Netherlands", 15, 7, 12], ["Great Britain", 14, 22, 29], ["South Korea", 13, 9, 10],
+  ["Italy", 12, 13, 15], ["Germany", 12, 13, 8]].map(([name, ...medals]) => ({ name, medals, total: medals[0] + medals[1] + medals[2] }));
+document.querySelector("#table").rows = TABLE;
+</script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>rhp-web examples</title>
+<!--
+  The examples of @shashank1010/rhp-web, one line per page. A page (bar.html) has one row of tabs, the three ways of writing
+  slats, and one or more examples, each one chart (bar/fruit): what every tab shares is in bar/fruit/page.html, its
+  chart and its code in two regions, with slat-template markers where the tabs differ, filled by each tab's one file
+  (bar/fruit/template.md: a heading and a fenced code block per marker), and the shell puts them in bar/fruit/page.html, which loads
+  the local build (../../out/rhp-web.js, made by cd web && npm run examples) through an import map. Serve this folder
+  over http (module scripts do not load over file://), e.g. npx serve web/examples from the repo root.
+-->
+<style>
+  body { margin: 0; padding: 40px 16px; background: #f6f4ef; color: #1d1b18; font: 15px/1.5 system-ui, sans-serif; }
+  main { max-width: 680px; margin: 0 auto; }
+  h1 { margin: 0 0 4px; font-size: 26px; }
+  p { margin: 0 0 20px; color: #5d5850; }
+  ul { margin: 0; padding: 0; list-style: none; }
+  li { padding: 12px 0; border-top: 1px solid #ddd8cd; }
+  a { font-weight: 600; color: #a2461a; }
+  code { font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>@shashank1010/rhp-web examples</h1>
+  <p>rhp's charts as custom elements: the chart is markup, and the row is a slat. Each page has three tabs, one per way
+    of writing slats: <b>Template</b> (markup with <code>{path}</code> bindings), <b>h</b> (function calls) and
+    <b>html</b> (tagged templates), each drawing the same chart. Per chart, the editor holds the chart's markup and its
+    slats as the selected tab writes them, marks what the tab adds to what every tab shares, and the page beside it
+    redraws as you type; a link to <code>bar.html#template</code> opens that tab.</p>
+  <ul>
+    <li><a href="bar.html">bar.html</a>: the README's bar chart, <code>&lt;rhp-chart&gt;</code> and <code>&lt;rhp-plot&gt;</code> with JSON column attributes, <code>order="sortBy:pounds:desc"</code>, a tick slat, and the same slat on other rows, thinner from the plot's template.</li>
+    <li><a href="live.html">live.html</a>: data as properties (<code>plot.data</code>, then <code>plot.sold</code> every second), <code>animate</code>, <code>static</code> toggled by a button, <code>keyboard</code>, and a readout from the focused row's <code>$row()</code>.</li>
+    <li><a href="scatter.html">scatter.html</a>: <code>&lt;rhp-many-dots&gt;</code> with field names, <code>key</code>, <code>color</code> and <code>size</code> accessors, <code>&lt;rhp-scale&gt;</code> with a tick slat and <code>&lt;rhp-axis ticks="every:…"&gt;</code>.</li>
+    <li><a href="blocks.html">blocks.html</a>: slats made of block elements (<code>rhp-bar</code>, <code>rhp-label</code>, <code>rhp-tick</code>, <code>rhp-place</code>, <code>rhp-cell</code>, <code>rhp-dot</code>), an <code>&lt;rhp-area&gt;</code> and <code>&lt;rhp-line&gt;</code> sparkline per row, <code>shape()</code> as a property, and a slat written as a class extending <code>RhpSlat</code>.</li>
+    <li><a href="poster.html">poster.html</a>: two <code>&lt;rhp-poster&gt;</code> looks from <code>posters.css</code>, each under an <code>&lt;rhp-theme&gt;</code>, with slotted parts: the medal table stacked by gold, silver and bronze, and Tokyo to Paris.</li>
+    <li><a href="csp.html">csp.html</a>: the fruit chart under a strict Content-Security-Policy (a nonce, no <code>'unsafe-eval'</code>): its h and Template tabs draw, and its html tab shows what the policy refuses.</li>
+    <li><a href="react.html">react.html</a>: React 19 rendering <code>&lt;rhp-chart&gt;</code> and <code>&lt;rhp-plot&gt;</code> with properties, the chart following <code>useState</code> (one page, no tabs).</li>
+  </ul>
+</main>
+</body>
+</html>

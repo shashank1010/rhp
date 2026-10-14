@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daylight by latitude</title>
+<!-- Slats made of block elements: <rhp-label>, <rhp-bar> with a shape() for its arrow tip, an <rhp-tick> at half the
+     day, and an <rhp-area> and <rhp-line> sparkline per row, with June's point hung on an <rhp-place>. A Line fills its
+     row's band across its own x range on the chart's scale, so the sparkline's x values sit past the bars (118 to 160
+     on a 0 to 160 scale) and the axis only numbers 0 to 100. -->
+<script type="importmap">{ "imports": { "@shashank1010/rhp-web": "../../out/rhp-web.js", "@shashank1010/rhp-web/posters.css": "../../out/posters.css" } }</script>
+<style>
+  body { margin: 0; padding: 32px 16px; background: #fbfaf7; color: #1d1f24; font: 15px/1.5 system-ui, sans-serif; }
+  main { max-width: 820px; margin: 0 auto; }
+  h1 { margin: 0 0 4px; font-size: 26px; }
+  p { margin: 0 0 20px; color: #5b5f68; max-width: 64ch; }
+  .key { display: flex; justify-content: space-between; margin: 0 0 4px; font-size: 12px; color: #5b5f68; }
+  .key span:last-child { width: 26%; text-align: center; }
+</style>
+</head>
+<body>
+<main>
+  <h1>The longest day, and the rest of the year</h1>
+  <p>Daylight on 21 June as a share of the day, nine cities from north to south (green: more day than night; the tick
+    is half the day), and on the right, the hours of daylight through the year, January to December, with 21 June
+    ringed.</p>
+  <div class="key"><span>Share of 21 June in daylight</span><span>Hours of daylight, Jan to Dec</span></div>
+
+
+<!-- rhp:chart -->
+<rhp-chart scale="[0, 160]" ticks="[0, 25, 50, 75, 100]" label="Daylight on 21 June and through the year, nine cities">
+  <rhp-plot id="cities">
+    <template><city-row></city-row></template>
+  </rhp-plot>
+</rhp-chart>
+<!-- /rhp:chart -->
+</main>
+
+<script type="module">
+// rhp:slats
+// slat-template:import
+
+const arrow = shape(["M", 0, 0], ["L", "-9px", 0], ["L", 1, 0.5], ["L", "-9px", 1], ["L", 0, 1], ["Z"]);
+
+slat("city-row", {
+  thickness: 34,
+  room: { start: 104, end: 4 },
+  css: `
+    .rhp-label.name { font-size: 14px; }
+    .rhp-label.hours { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--rhp-muted); }
+    .spark .rhp-stroke { stroke-width: 1.5px; }
+    .rhp-area.under { opacity: .15; }
+    .june { position: absolute; width: 7px; height: 7px; translate: -50% -50%; border: 1.5px solid var(--rhp-ink); border-radius: 50%; }
+  `,
+  // slat-template:settings
+},
+// slat-template:row
+);
+// /rhp:slats
+
+// Data: computed from each city's latitude with the usual daylength formula (the sun's declination and the hour angle
+// of sunset, with no refraction: short of an almanac's figures by minutes, and by up to forty in the far north)
+const daylight = (lat, day) => {
+  const decl = 23.44 * Math.sin((2 * Math.PI * (284 + day)) / 365);
+  const cos = -Math.tan((lat * Math.PI) / 180) * Math.tan((decl * Math.PI) / 180);
+  return (2 * ((Math.acos(Math.max(-1, Math.min(1, cos))) * 180) / Math.PI)) / 15;
+};
+const MID_MONTH = [15, 46, 74, 105, 135, 166, 196, 227, 258, 288, 319, 349];
+const CITIES = [["Reykjavík", 64.15], ["Oslo", 59.91], ["London", 51.51], ["New York", 40.71], ["Cairo", 30.04],
+  ["Singapore", 1.35], ["Nairobi", -1.29], ["Sydney", -33.87], ["Buenos Aires", -34.6]].map(([name, lat]) => {
+  const hours = daylight(lat, 172);
+  return {
+    name, hours,
+    value: (hours / 24) * 100,
+    // [x on the chart's scale, hours]: Jan at 118, Dec at 160
+    history: MID_MONTH.map((day, i) => [118 + (i * 42) / 11, daylight(lat, day)]),
+    june: [118 + (5 + (172 - 166) / 30) * (42 / 11), hours], // 21 June, between June's and July's points
+  };
+});
+
+document.querySelector("#cities").rows = CITIES;
+</script>
+</body>
+</html>

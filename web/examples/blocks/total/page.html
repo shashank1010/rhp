@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daylight over the year</title>
+<!-- A slat made of block elements: the plot draws its one row on an <rhp-cell> background, with an <rhp-bar>, an
+     <rhp-dot> at the bar's end and two <rhp-label>s. -->
+<script type="importmap">{ "imports": { "@shashank1010/rhp-web": "../../out/rhp-web.js", "@shashank1010/rhp-web/posters.css": "../../out/posters.css" } }</script>
+<style>
+  body { margin: 0; padding: 32px 16px; background: #fbfaf7; color: #1d1f24; font: 15px/1.5 system-ui, sans-serif; }
+  main { max-width: 820px; margin: 0 auto; }
+  h1 { margin: 0 0 4px; font-size: 26px; }
+  p { margin: 0 0 20px; color: #5b5f68; max-width: 64ch; }
+  .key { display: flex; justify-content: space-between; margin: 0 0 4px; font-size: 12px; color: #5b5f68; }
+  .key span:last-child { width: 26%; text-align: center; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Over a whole year, every city gets the same</h1>
+  <p>Daylight averaged over the year and over the nine cities, from north to south: half the day, give or take the
+    minutes the formula leaves out.</p>
+
+
+<!-- rhp:chart -->
+<rhp-chart scale="[0, 160]" ticks="false" label="Daylight averaged over the year and the nine cities">
+  <rhp-plot id="total">
+    <template><total-row></total-row></template>
+  </rhp-plot>
+</rhp-chart>
+<!-- /rhp:chart -->
+</main>
+
+<script type="module">
+// rhp:slats
+// slat-template:import
+
+const layout = { thickness: 42, room: { start: 104, end: 4 } };
+const css = `
+  .total { background: repeating-linear-gradient(135deg, var(--rhp-ink) 0 2px, transparent 2px 6px); opacity: .55; }
+  .name, .hours { font-size: 14px; font-weight: 600; }
+  .hours { --rhp-label-gap: 9px; }
+  .tint { opacity: .25; }
+`;
+
+// slat-template:slat
+// /rhp:slats
+
+// Data: computed from each city's latitude with the usual daylength formula (the sun's declination and the hour angle
+// of sunset, with no refraction: short of an almanac's figures by minutes, and by up to forty in the far north)
+const daylight = (lat, day) => {
+  const decl = 23.44 * Math.sin((2 * Math.PI * (284 + day)) / 365);
+  const cos = -Math.tan((lat * Math.PI) / 180) * Math.tan((decl * Math.PI) / 180);
+  return (2 * ((Math.acos(Math.max(-1, Math.min(1, cos))) * 180) / Math.PI)) / 15;
+};
+const MID_MONTH = [15, 46, 74, 105, 135, 166, 196, 227, 258, 288, 319, 349];
+const CITIES = [["Reykjavík", 64.15], ["Oslo", 59.91], ["London", 51.51], ["New York", 40.71], ["Cairo", 30.04],
+  ["Singapore", 1.35], ["Nairobi", -1.29], ["Sydney", -33.87], ["Buenos Aires", -34.6]].map(([name, lat]) => {
+  const hours = daylight(lat, 172);
+  return {
+    name, hours,
+    value: (hours / 24) * 100,
+    // [x on the chart's scale, hours]: Jan at 118, Dec at 160
+    history: MID_MONTH.map((day, i) => [118 + (i * 42) / 11, daylight(lat, day)]),
+    june: [118 + (5 + (172 - 166) / 30) * (42 / 11), hours], // 21 June, between June's and July's points
+  };
+});
+
+// Each city's daylight averaged over the year, then over the cities
+const avg = CITIES.reduce((s, c) => s + c.history.reduce((t, p) => t + p[1], 0) / 12, 0) / CITIES.length;
+document.querySelector("#total").data = { name: ["Year-round"], value: [(avg / 24) * 100], hours: [avg] };
+</script>
+</body>
+</html>

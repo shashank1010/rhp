@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Live chart</title>
+<!--
+  A chart that follows data given from JS. The plot has no column attributes: plot.data = { name, sold } gives its
+  columns once, then plot.sold = [...] every second moves the bars in place (the values are a random walk, made up for
+  the demo). animate on the chart turns on rhp's JS animation, so the bars glide and the rows slide as order re-ranks
+  them. The button toggles the chart's static attribute: a static chart draws again on each change, with no animation.
+  keyboard on the plot puts the rows in the Tab order (arrow keys move between them), and a focusin listener on the
+  chart reads the focused row's index from el.$row() for the readout under the chart.
+  The page of every tab of the example: the chart between the rhp:chart markers and the code its tabs share between
+  the rhp:slats markers, with each tab's parts (h.md, ...) at their slat-template markers, put in by the example's page
+  (../live.html).
+-->
+<script type="importmap">{ "imports": { "@shashank1010/rhp-web": "../out/rhp-web.js", "@shashank1010/rhp-web/posters.css": "../out/posters.css" } }</script>
+<style>
+  body { margin: 0; padding: 40px 16px; background: #f3f5f7; color: #172029; font: 15px/1.5 system-ui, sans-serif; }
+  main { max-width: 680px; margin: 0 auto; }
+  h1 { margin: 0 0 4px; font-size: 26px; }
+  p { margin: 0 0 18px; color: #556270; }
+  button { margin-bottom: 18px; padding: 6px 14px; border: 1px solid #9aa7b4; border-radius: 6px; background: #fff; font: inherit; cursor: pointer; }
+  button[aria-pressed="true"] { background: #172029; border-color: #172029; color: #fff; }
+  output { display: block; min-height: 1.5em; margin-top: 14px; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Orders per minute, live</h1>
+  <p>Simulated: each second every stand's rate takes a small random step. Tab into the chart, then use the arrow keys.</p>
+  <button id="toggle" aria-pressed="false">Static</button>
+  <!-- rhp:chart -->
+  <rhp-chart id="chart" scale="[0, 60]" ticks="every:10" animate label="Orders per minute by stand">
+    <rhp-plot id="plot" order="sortBy:sold:desc" keyboard>
+      <template><stand-row></stand-row></template>
+    </rhp-plot>
+  </rhp-chart>
+  <!-- /rhp:chart -->
+  <output id="readout" aria-live="polite">Focus a row to read it here.</output>
+</main>
+
+<script type="module">
+// rhp:slats
+// slat-template:import
+
+// slat-template:about
+slat("stand-row", {
+  thickness: 34,
+  inset: 0.2,
+  room: { start: 96, end: 40 },
+  css: `
+    .rhp-bar { background: #2f7fb8; border-radius: 0 3px 3px 0; }
+    .value { font-variant-numeric: tabular-nums; color: #556270; }
+    :focus-visible { outline: 2px solid #172029; outline-offset: -1px; border-radius: 4px; }
+    :focus-visible .rhp-bar { background: #e0602b; }
+  `,
+  attrs: (d) => ({ "aria-label": `${d.name}: ${Math.round(d.sold)} orders per minute` }),
+  // slat-template:settings
+},
+// slat-template:row
+);
+// /rhp:slats
+
+const chart = document.getElementById("chart");
+const plot = document.getElementById("plot");
+const readout = document.getElementById("readout");
+
+// The columns, as a property: a new set of columns goes through data (or set()), not plot.name = ...
+const names = ["North", "Harbour", "Station", "Market", "Old town"];
+plot.data = { name: names, sold: [42, 31, 27, 19, 12] };
+
+// Every second, a random walk: each value moves by up to 4, within the scale. plot.sold = [...] is a column the plot
+// already has, so it moves the bars and remakes nothing.
+const clamp = (v) => Math.min(58, Math.max(2, v));
+setInterval(() => {
+  plot.sold = plot.sold.map((v) => clamp(v + (Math.random() - 0.5) * 8));
+  show();
+}, 1000);
+
+// The focused row: each row's element carries $row(), the index of the row it shows
+let focused = null;
+function show() {
+  if (focused == null) return;
+  readout.textContent = `${names[focused]}: ${plot.sold[focused].toFixed(1)} orders per minute`;
+}
+chart.addEventListener("focusin", (e) => {
+  focused = e.target.closest("[data-rhp-slat]")?.$row() ?? null;
+  show();
+});
+chart.addEventListener("focusout", (e) => {
+  if (chart.contains(e.relatedTarget)) return;
+  focused = null;
+  readout.textContent = "Focus a row to read it here.";
+});
+
+// static draws every row again on each change (no animation); toggling it makes the chart again
+document.getElementById("toggle").addEventListener("click", (e) => {
+  chart.toggleAttribute("static");
+  e.currentTarget.setAttribute("aria-pressed", String(chart.hasAttribute("static")));
+});
+</script>
+</body>
+</html>

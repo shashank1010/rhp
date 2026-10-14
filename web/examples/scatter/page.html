@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Collatz stopping times</title>
+<!-- A scatter of 300 points with <rhp-many-dots>: its rows and its color, size and point-class accessors set as
+     properties (the color switched by a select), field names as attributes (at="x" cross="y" key="id"), an <rhp-scale> drawing the value
+     axis with a tick slat, and an <rhp-axis ticks="every:20"> as the minor grid. To use a CDN, change the import map. -->
+<script type="importmap">{ "imports": { "@shashank1010/rhp-web": "../out/rhp-web.js", "@shashank1010/rhp-web/posters.css": "../out/posters.css" } }</script>
+<style>
+  body { margin: 0; padding: 32px 16px; background: #f6f5f1; color: #1d1f24; font: 15px/1.5 system-ui, sans-serif; }
+  main { max-width: 820px; margin: 0 auto; }
+  h1 { margin: 0 0 4px; font-size: 26px; }
+  p { margin: 0 0 16px; color: #5b5f68; max-width: 62ch; }
+  label { display: inline-block; margin-bottom: 12px; font-size: 14px; }
+  .legend { display: block; min-height: 20px; margin: -8px 0 8px; font-size: 13px; color: #5b5f68; }
+  /* Record setters (a longer path than every smaller start) get a ring; the collection keeps their geometry */
+  .rhp-manydot.record { box-shadow: 0 0 0 2px #f6f5f1, 0 0 0 3.5px #1d1f24; z-index: 1; }
+</style>
+</head>
+<body>
+<main>
+  <h1>How long until 1?</h1>
+  <p>Start from n; halve it when it is even, take 3n + 1 when it is odd, and count the steps until you reach 1. Every
+    start from 1 to 300, against its number of steps. Larger and ringed: the records, which take longer than any
+    smaller start.</p>
+  <label>Color by
+    <select id="by">
+      <option value="parity">even or odd start</option>
+      <option value="peak">highest value on the way</option>
+      <option value="none">one color (the attribute)</option>
+    </select>
+  </label>
+  <span class="legend" id="legend"></span>
+
+
+<!-- rhp:chart -->
+<rhp-chart scale="[0, 300]" cross="[0, 140]" cross-ticks="[0, 35, 70, 105, 140]" height="380"
+  label="Collatz stopping time for each start from 1 to 300">
+  <rhp-axis ticks="every:20"></rhp-axis>
+  <rhp-scale ticks="every:50" inset="0" room='{"after": 26}'>
+    <!-- slat-template:scale -->
+  </rhp-scale>
+  <rhp-many-dots at="x" cross="y" key="id" color="series-1" aria-label="300 starts"></rhp-many-dots>
+</rhp-chart>
+<!-- /rhp:chart -->
+</main>
+
+<script type="module">
+// rhp:slats
+// slat-template:import
+
+// slat-template:more
+// /rhp:slats
+
+// Data: computed, not sampled. For each start, its steps to 1 and the highest value its path reaches.
+function collatz(n) {
+  let steps = 0, peak = n;
+  while (n !== 1) {
+    n = n % 2 ? 3 * n + 1 : n / 2;
+    steps++;
+    peak = Math.max(peak, n);
+  }
+  return { steps, peak };
+}
+let best = -1;
+const rows = Array.from({ length: 300 }, (_, i) => {
+  const n = i + 1, { steps, peak } = collatz(n);
+  const record = steps > best;
+  if (record) best = steps;
+  return { id: n, x: n, y: steps, peak, record };
+});
+
+// The minor grid: lines every 20 with no numbers (format is a property: a function)
+document.querySelector("rhp-axis").format = () => "";
+
+// ManyDots' props as properties: the rows themselves, and accessors (row, index) => value
+const dots = document.querySelector("rhp-many-dots");
+dots.rows = rows;
+dots.size = (row) => (row.record ? 8 : 5); // a number is pixels
+dots.pointClass = (row) => (row.record ? "record" : null);
+
+const COLORS = {
+  parity: { fn: (row) => (row.x % 2 ? "series-1" : "series-2"), legend: "Blue: odd start. Orange: even start." },
+  peak: { fn: (row) => (row.peak > 1000 ? "negative" : "muted"), legend: "Red: the path climbs past 1,000 on the way down." },
+  // undefined brings the attribute back: color="series-1" for every point
+  none: { fn: undefined, legend: "" },
+};
+const by = document.querySelector("#by");
+const show = () => {
+  dots.color = COLORS[by.value].fn;
+  document.querySelector("#legend").textContent = COLORS[by.value].legend;
+};
+by.addEventListener("change", show);
+show();
+</script>
+</body>
+</html>

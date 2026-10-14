@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+  The bar chart under a strict Content-Security-Policy, the one rhp's tests use: scripts and styles from this origin or
+  carrying the nonce, nothing inline without it, and no 'unsafe-eval'.
+  - The import map, the <style> and the scripts each carry the nonce (an inline import map is a script to CSP).
+  - rhp's own styles are adopted stylesheets, which style-src does not govern, and its one <style> element (the cascade
+    layer statement) takes the nonce from the first element on the page that has one.
+  - Slats written with h, and templates with {bindings}, draw: nothing is compiled. A slat written with html is
+    compiled with new Function, which is eval to CSP: refused here. rhp reports what
+    it leaves out with reportError, like an uncaught error, and draws the rest; the error listener in <head> lists each
+    report on the page.
+  - No style="..." attribute in the markup, a template's included: style-src without 'unsafe-inline' blocks those
+    too, when the page is parsed.
+  A real server sends the policy as a header and mints a new nonce for every response; the fixed one is for the demo.
+  The page of every tab of the example: the chart between the rhp:chart markers and the code its tabs share between
+  the rhp:slats markers, with each tab's parts (h.md, ...) at their slat-template markers, put in by the example's page
+  (../csp.html).
+-->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'nonce-rhp4web'; style-src 'self' 'nonce-rhp4web'">
+<title>Strict CSP</title>
+<script type="importmap" nonce="rhp4web">{ "imports": { "@shashank1010/rhp-web": "../out/rhp-web.js", "@shashank1010/rhp-web/posters.css": "../out/posters.css" } }</script>
+<style nonce="rhp4web">
+  body { margin: 0; padding: 40px 16px; background: #f4f6f2; color: #1a2018; font: 15px/1.5 system-ui, sans-serif; }
+  main { max-width: 680px; margin: 0 auto; }
+  h1 { margin: 0 0 4px; font-size: 26px; }
+  h2 { margin: 40px 0 4px; font-size: 18px; }
+  p { margin: 0 0 18px; color: #56604f; }
+  code { font-size: 13px; white-space: nowrap; }
+  .refused { margin: 0 0 18px; padding: 10px 14px; border-left: 4px solid #b3402a; background: #fbecea; color: #5a1f14; }
+  .refused ul { margin: 6px 0 0; padding-left: 18px; font-size: 13px; overflow-wrap: anywhere; }
+</style>
+<script nonce="rhp4web">
+  // rhp reports what it cannot draw with reportError, like an uncaught error (and leaves only that part out): each report
+  // is listed on the page, so a refusal by the policy is seen, not only in the console. With h and templates there is
+  // nothing to list.
+  addEventListener("error", (e) => {
+    const item = document.createElement("li");
+    item.textContent = e.message;
+    document.getElementById("refusals").append(item);
+    document.getElementById("refused").hidden = false;
+  });
+</script>
+</head>
+<body>
+<main>
+  <h1>Drawn under a strict policy</h1>
+  <p>No <code>'unsafe-eval'</code>, no <code>'unsafe-inline'</code>: slats written with <code>h</code> or as templates
+    draw, and what the policy refuses is listed here. Fresh fruit available per American in a year, in pounds
+    (USDA ERS, 2019, rounded).</p>
+  <div id="refused" class="refused" role="alert" hidden>
+    <strong>Refused by this page's policy, which has no <code>'unsafe-eval'</code>:</strong>
+    <ul id="refusals"></ul>
+  </div>
+  <!-- rhp:chart -->
+  <rhp-chart scale="[0, 30]" ticks="every:10" label="Fresh fruit per American in a year, pounds">
+    <rhp-plot order="sortBy:pounds:desc"
+      name='["Apples", "Bananas", "Grapes", "Oranges", "Strawberries", "Watermelon"]'
+      pounds="[16.3, 26.8, 7.8, 7.6, 8.1, 15.0]">
+      <template><food-row></food-row></template>
+    </rhp-plot>
+  </rhp-chart>
+  <!-- /rhp:chart -->
+</main>
+
+<script type="module" nonce="rhp4web">
+// rhp:slats
+// slat-template:import
+
+// slat-template:about
+slat("food-row", {
+  thickness: 32,
+  inset: 0.18,
+  room: { start: 110, end: 48 },
+  css: `
+    .rhp-bar { background: #4f8a3c; border-radius: 0 3px 3px 0; }
+    .value { font-variant-numeric: tabular-nums; color: #56604f; }
+  `,
+  // slat-template:settings
+},
+// slat-template:row
+);
+// /rhp:slats
+</script>
+</body>
+</html>

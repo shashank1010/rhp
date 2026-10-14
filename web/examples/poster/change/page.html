@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The host effect</title>
+<!-- An <rhp-theme> around an <rhp-poster> with the "climate" look from posters.css: parts given as attributes
+     (kicker, dek) and as slotted children (title, note). The data is JSON in the <rhp-plot>'s attributes. -->
+<script type="importmap">{ "imports": { "@shashank1010/rhp-web": "../../out/rhp-web.js", "@shashank1010/rhp-web/posters.css": "../../out/posters.css" } }</script>
+<link rel="stylesheet" href="../../out/posters.css">
+<style>
+  body { margin: 0; padding: 32px 16px; background: #1b1e24; font: 15px/1.5 system-ui, sans-serif; }
+  rhp-theme { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 20px; max-width: 980px; margin: 0 auto; }
+  rhp-poster { display: block; }
+  .poster .headline em { font-style: normal; color: #f5c84c; }
+  .poster .note a { color: inherit; }
+  .keys { margin: -6px 0 10px; }
+  .keys .gold { background: #f5c84c; } .keys .silver { background: #c8cfdc; } .keys .bronze { background: #d4874a; }
+</style>
+</head>
+<body>
+
+<!-- rhp:chart -->
+<rhp-theme series='["#f5c84c", "#c8cfdc", "#d4874a", "#8fb3ff"]' ink="#eef1f8" muted="#9aa3b8" grid="rgb(238 241 248 / .14)" negative="#ff7a8c">
+  <rhp-poster look="climate" kicker="The host effect" dek="Total medals at Tokyo 2020 (grey) and at Paris 2024 (gold or red), nine nations.">
+    <span slot="title">France nearly doubled its haul at home</span>
+    <rhp-chart scale="[0, 130]" ticks="every:25" label="Total medals at Tokyo 2020 and Paris 2024">
+      <rhp-plot order="sortBy:paris:desc"
+        name='["United States", "China", "Great Britain", "France", "Australia", "Japan", "Italy", "Netherlands", "Germany"]'
+        tokyo="[113, 88, 65, 33, 46, 58, 40, 36, 37]" paris="[126, 91, 65, 64, 53, 45, 40, 34, 33]">
+        <template><change-row></change-row></template>
+      </rhp-plot>
+    </rhp-chart>
+    <span slot="note">Source: olympics.com, medal tables as awarded at each Games.</span>
+  </rhp-poster>
+</rhp-theme>
+<!-- /rhp:chart -->
+
+<script type="module">
+// rhp:slats
+// slat-template:import
+
+// Tokyo to Paris: a thin bar between the two totals, grey for Tokyo, the theme's gold (or red, when fewer) for Paris
+slat("change-row", {
+  thickness: 30,
+  room: { start: 104, end: 36 },
+  css: `.link { opacity: .35; } .now { font-weight: 700; --rhp-label-gap: 12px; }`,
+  // slat-template:settings
+},
+// slat-template:row
+);
+// /rhp:slats
+
+</script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>React and rhp-web</title>
+<!--
+  React 19 rendering <rhp-chart> and <rhp-plot> (react.jsx): the rows are React state, passed to the plot as one
+  property, data={{ name, sold }}; "Add a fruit" adds a row (one new slat) and "More ..." changes one number (one bar
+  moves). The slat is made with slat() and h at module level. out/react.js is react.jsx built by build.mjs
+  (cd web && npm run build && node examples/build.mjs); it imports "@shashank1010/rhp-web", which the import map resolves.
+  To load the package from a CDN, point the import map at https://cdn.jsdelivr.net/npm/@shashank1010/rhp-web/dist/rhp-web.js
+-->
+<script type="importmap">{ "imports": { "@shashank1010/rhp-web": "./out/rhp-web.js", "@shashank1010/rhp-web/posters.css": "./out/posters.css" } }</script>
+<style>
+  body { margin: 0; padding: 40px 16px; background: #f6f4ef; color: #1d1b18; font: 15px/1.5 system-ui, sans-serif; }
+  main { max-width: 680px; margin: 0 auto; }
+  h1 { margin: 0 0 4px; font-size: 26px; }
+  p { margin: 0 0 18px; color: #5d5850; }
+  button { font: inherit; padding: 4px 12px; border: 1px solid #b9b2a4; border-radius: 4px; background: #fff; cursor: pointer; }
+  #count { color: #8a8478; font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>A chart that follows React state</h1>
+  <p>Crates of fruit sold this week. The rows live in <code>useState</code>; the chart is two custom elements in JSX.</p>
+  <div id="root"></div>
+</main>
+<script type="module" src="out/react.js"></script>
+</body>
+</html>
