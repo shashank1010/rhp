@@ -49,6 +49,8 @@ npm run report             # RESULTS.md from results/ and out/sizes.json
 `safari` runs the real Safari through `safaridriver` (enable it once with `safaridriver --enable`, and allow remote automation in Safari's Develop menu).
 Close other apps while it runs: timings are only as steady as the machine.
 
+A page in `out/` shows nothing on its own: `run.mjs` calls its `window.bench` methods. To look at an adapter's chart, serve `out/` (`npx serve out`) and open its page with `?demo` (`out/rhp-web.html?demo`, or `?demo=50` for 50 bars); a scale page takes `?demo=scatter:1000` or `?demo=line:1000`.
+
 For a repeat with recorded idle baselines and exact input hashes:
 
 ```sh
@@ -83,6 +85,33 @@ node scale.mjs run                         # Chromium; BENCH_BROWSER and BENCH_R
 
 An rhp scatter plot is one slat per point, each an HTML element, so its cost grows with the points the way the DOM's does; a Line is one SVG path, whatever its length.
 
+
+## Web components
+
+`web/` (`@shashank1010/rhp-web`) draws the same charts as custom elements over the same rhp.
+Its adapters draw the bar chart of `rhp-css` and are compared with the Solid adapters, not with the other libraries:
+
+| Adapter | How | Against |
+|---|---|---|
+| `rhp-web` | `<rhp-chart>` markup set with `innerHTML`, the slat `<bench-row>` defined once with `slat()` and `h`, data given as properties of `<rhp-plot>` | `rhp-css` |
+| `rhp-web-dom` | the same chart made with `createElement` and properties: no HTML parsing | `rhp-css` |
+| `rhp-web-html` | the slat written with Solid's `html` instead of `h` | `rhp-css` |
+| `rhp-web-template` | the slat written as a template string with `{bindings}` and block elements (`<rhp-bar to="{value}">`), which the template binds with no store per block | `rhp-css` |
+| `rhp-web-js`, `rhp-web-static` | the `animate` and `static` attributes | `rhp-js`, `rhp-static` |
+| `rhp-h` | Solid without web components, written with `h` instead of JSX (the cost of `h` alone) | `rhp-css` |
+| `rhp-react` | rhp in React through `react/`'s `toReact`, the slat written with `h`, React re-rendering it with `flushSync` as the other React adapters do | `rhp-css` |
+
+An `<rhp-chart>` builds its chart in a microtask after it connects. The harness measures until the frame is drawn, so the mount times include that build, as well as the parsing and upgrade of the markup.
+`scale/rhp-web.js` draws the scale charts as markup (static): a scatter point is a `<point-row>` slat holding a Dot, so each point is two elements where the Solid slat returns the bare Dot.
+The build resolves `@bezda/rhp` and `@bezda/rhp/standalone` (imported by `web/src` and `react/`) to this repo's `src/`, and gives each page one React (`react/` would otherwise find the repo root's copy); the sizes without the framework still leave React out.
+The report adds a "Web components over Solid" section with each adapter next to its counterpart and the ratio, when these adapters are in the results.
+
+```sh
+npm run build && node scale.mjs build
+node run.mjs chrome rhp-css,rhp-js,rhp-static,rhp-h,rhp-web,rhp-web-dom,rhp-web-html,rhp-web-template,rhp-web-js,rhp-web-static,rhp-react
+node scale.mjs run rhp,rhp-web
+npm run report
+```
 
 ## Local comparison run (October 5, 2026)
 

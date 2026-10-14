@@ -35,6 +35,7 @@ Contents: [1 The model](#1-the-model) · [2 Imports and the html template](#2-im
 | `@bezda/rhp/rhp.css` | rhp's core CSS as a file | only with `linkedCss()` (server rendering, many islands) |
 | `@bezda/rhp/posters.css` | the gallery's Poster looks | optional; the kit's recipes write their own |
 | `@bezda/rhp-react` | `toReact()` and everything in standalone | not on npm yet: in React apps, use `@bezda/rhp/standalone` with the small wrapper in environments.md |
+| `@shashank1010/rhp-web` | web components (`<rhp-chart>`, `<rhp-plot>`, slats made with `slat(tag, settings?, fn)`, which replaces rhp's `slat`) and everything else in standalone | not on npm yet: in plain HTML, use `@bezda/rhp/standalone` |
 
 Both `@bezda/rhp` and `@bezda/rhp/standalone` export rhp's whole API:
 

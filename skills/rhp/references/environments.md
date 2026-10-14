@@ -697,6 +697,7 @@ export function mountChart<P extends object>(chart: (props: P) => JSX.Element, e
 Detect: `react` and `react-dom` in package.json (Vite has `@vitejs/plugin-react`); Next.js is section 8.
 Install: `npm install @bezda/rhp`.
 `@bezda/rhp-react` is not on npm: use the wrapper below.
+`@shashank1010/rhp-web` (charts as web components, `web/` in rhp's repository) is not on npm either.
 
 ```
 index.html                    the fonts (section 2)
@@ -1361,6 +1362,7 @@ The fonts, in `src/index.html`'s head:
 ## 12. Astro
 
 **Without a framework integration**, a custom element in an Astro component draws the html-template chart in the browser.
+rhp's repository now has ready-made custom elements in `@shashank1010/rhp-web` (`<rhp-chart>`, `<rhp-plot>`, slats made with `slat()`); it is not on npm yet, so write the element below (and once it is, import it in a client `<script>` only: it throws on the server).
 `src/components/Towers.astro`, with the helper and the chart module (section 6) in `src/rhp/` and `src/charts/`:
 
 ```astro
