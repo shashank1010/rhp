@@ -1,0 +1,98 @@
+{
+  "apex": {
+    "total": 284587,
+    "withoutFramework": 284587
+  },
+  "chartjs": {
+    "total": 47873,
+    "withoutFramework": 47873
+  },
+  "chartscss": {
+    "total": 6311,
+    "withoutFramework": 6311
+  },
+  "d3": {
+    "total": 18744,
+    "withoutFramework": 18744
+  },
+  "echarts": {
+    "total": 161222,
+    "withoutFramework": 161222
+  },
+  "g2": {
+    "total": 407598,
+    "withoutFramework": 407598
+  },
+  "highcharts": {
+    "total": 104878,
+    "withoutFramework": 104878
+  },
+  "nivo": {
+    "total": 159826,
+    "withoutFramework": 90744
+  },
+  "plot": {
+    "total": 93100,
+    "withoutFramework": 93100
+  },
+  "recharts": {
+    "total": 164184,
+    "withoutFramework": 95880
+  },
+  "rhp-css": {
+    "total": 27728,
+    "withoutFramework": 18377
+  },
+  "rhp-h": {
+    "total": 28920,
+    "withoutFramework": 18317
+  },
+  "rhp-js": {
+    "total": 27736,
+    "withoutFramework": 18383
+  },
+  "rhp-react": {
+    "total": 99488,
+    "withoutFramework": 18801
+  },
+  "rhp-static": {
+    "total": 27738,
+    "withoutFramework": 18386
+  },
+  "rhp-web-dom": {
+    "total": 48254,
+    "withoutFramework": 38063
+  },
+  "rhp-web-html": {
+    "total": 51541,
+    "withoutFramework": 38006
+  },
+  "rhp-web-js": {
+    "total": 48197,
+    "withoutFramework": 38006
+  },
+  "rhp-web-static": {
+    "total": 48188,
+    "withoutFramework": 37998
+  },
+  "rhp-web-template": {
+    "total": 46932,
+    "withoutFramework": 37993
+  },
+  "rhp-web": {
+    "total": 48201,
+    "withoutFramework": 38013
+  },
+  "vanilla": {
+    "total": 440,
+    "withoutFramework": 440
+  },
+  "vegalite": {
+    "total": 303999,
+    "withoutFramework": 303999
+  },
+  "victory": {
+    "total": 147977,
+    "withoutFramework": 78720
+  }
+}

@@ -1,0 +1,1757 @@
+{
+  "engine": "chromium",
+  "browser": "153.0.8010.12",
+  "date": "2026-10-14T13:04:50.502Z",
+  "loadStart": [
+    15.62060546875,
+    11.0517578125,
+    7.76220703125
+  ],
+  "nodeMetric": "connected-elements",
+  "libs": {
+    "apex": {
+      "scatter-1000": {
+        "frame": 42.7,
+        "total": 281.4,
+        "nodes": 1092,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 59.300000071525574,
+            "total": 325.552,
+            "nodes": 1092,
+            "errors": 0
+          },
+          {
+            "frame": 42.700000047683716,
+            "total": 279.387,
+            "nodes": 1092,
+            "errors": 0
+          },
+          {
+            "frame": 41.700000047683716,
+            "total": 288.251,
+            "nodes": 1092,
+            "errors": 0
+          },
+          {
+            "frame": 46,
+            "total": 281.42400000000004,
+            "nodes": 1092,
+            "errors": 0
+          },
+          {
+            "frame": 41.300000071525574,
+            "total": 271.003,
+            "nodes": 1092,
+            "errors": 0
+          }
+        ]
+      },
+      "scatter-10000": {
+        "frame": 196.3,
+        "total": 1287.5,
+        "nodes": 10092,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 196.29999995231628,
+            "total": 1287.507,
+            "nodes": 10092,
+            "errors": 0
+          },
+          {
+            "frame": 201.29999995231628,
+            "total": 1286.382,
+            "nodes": 10092,
+            "errors": 0
+          },
+          {
+            "frame": 194.70000004768372,
+            "total": 1316.522,
+            "nodes": 10092,
+            "errors": 0
+          },
+          {
+            "frame": 193.69999992847443,
+            "total": 1350.0349999999999,
+            "nodes": 10092,
+            "errors": 0
+          },
+          {
+            "frame": 196.89999997615814,
+            "total": 1271.103,
+            "nodes": 10092,
+            "errors": 0
+          }
+        ]
+      },
+      "line-1000": {
+        "frame": 22.7,
+        "total": 58.7,
+        "nodes": 94,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 22.199999928474426,
+            "total": 62.187,
+            "nodes": 94,
+            "errors": 0
+          },
+          {
+            "frame": 22.699999928474426,
+            "total": 57.881,
+            "nodes": 94,
+            "errors": 0
+          },
+          {
+            "frame": 23.300000071525574,
+            "total": 56.778,
+            "nodes": 94,
+            "errors": 0
+          },
+          {
+            "frame": 32,
+            "total": 71.93900000000001,
+            "nodes": 94,
+            "errors": 0
+          },
+          {
+            "frame": 21.899999976158142,
+            "total": 58.731,
+            "nodes": 94,
+            "errors": 0
+          }
+        ]
+      },
+      "line-100000": {
+        "frame": 79.9,
+        "total": 1180,
+        "nodes": 91,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 79.89999997615814,
+            "total": 1131.756,
+            "nodes": 91,
+            "errors": 0
+          },
+          {
+            "frame": 76.5,
+            "total": 1179.9810000000002,
+            "nodes": 91,
+            "errors": 0
+          },
+          {
+            "frame": 79,
+            "total": 1197.522,
+            "nodes": 91,
+            "errors": 0
+          },
+          {
+            "frame": 83.30000007152557,
+            "total": 1161.719,
+            "nodes": 91,
+            "errors": 0
+          },
+          {
+            "frame": 84.20000004768372,
+            "total": 1272.2849999999999,
+            "nodes": 91,
+            "errors": 0
+          }
+        ]
+      }
+    },
+    "chartjs": {
+      "scatter-1000": {
+        "frame": 34.9,
+        "total": 248,
+        "nodes": 3,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 56.800000071525574,
+            "total": 289.19800000000004,
+            "nodes": 3,
+            "errors": 0
+          },
+          {
+            "frame": 34.699999928474426,
+            "total": 234.10799999999998,
+            "nodes": 3,
+            "errors": 0
+          },
+          {
+            "frame": 34.89999997615814,
+            "total": 251.409,
+            "nodes": 3,
+            "errors": 0
+          },
+          {
+            "frame": 36,
+            "total": 234.404,
+            "nodes": 3,
+            "errors": 0
+          },
+          {
+            "frame": 34.199999928474426,
+            "total": 247.958,
+            "nodes": 3,
+            "errors": 0
+          }
+        ]
+      },
+      "scatter-10000": {
+        "frame": 132.3,
+        "total": 1161,
+        "nodes": 3,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 132.29999995231628,
+            "total": 1159.923,
+            "nodes": 3,
+            "errors": 0
+          },
+          {
+            "frame": 130.90000009536743,
+            "total": 1162.511,
+            "nodes": 3,
+            "errors": 0
+          },
+          {
+            "frame": 148,
+            "total": 1169.1560000000002,
+            "nodes": 3,
+            "errors": 0
+          },
+          {
+            "frame": 129.39999997615814,
+            "total": 1160.9919999999997,
+            "nodes": 3,
+            "errors": 0
+          },
+          {
+            "frame": 135.89999997615814,
+            "total": 1157.9679999999998,
+            "nodes": 3,
+            "errors": 0
+          }
+        ]
+      },
+      "line-1000": {
+        "frame": 32.4,
+        "total": 216.4,
+        "nodes": 3,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 33.59999990463257,
+            "total": 164.879,
+            "nodes": 3,
+            "errors": 0
+          },
+          {
+            "frame": 32.300000071525574,
+            "total": 196.162,
+            "nodes": 3,
+            "errors": 0
+          },
+          {
+            "frame": 32.39999997615814,
+            "total": 216.35399999999998,
+            "nodes": 3,
+            "errors": 0
+          },
+          {
+            "frame": 32.300000071525574,
+            "total": 221.03900000000002,
+            "nodes": 3,
+            "errors": 0
+          },
+          {
+            "frame": 34.90000009536743,
+            "total": 226.42499999999998,
+            "nodes": 3,
+            "errors": 0
+          }
+        ]
+      },
+      "line-100000": {
+        "frame": 920.5,
+        "total": 1914.5,
+        "nodes": 3,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 922.5999999046326,
+            "total": 1914.4959999999999,
+            "nodes": 3,
+            "errors": 0
+          },
+          {
+            "frame": 914.5,
+            "total": 1921.338,
+            "nodes": 3,
+            "errors": 0
+          },
+          {
+            "frame": 910.8999999761581,
+            "total": 1895.764,
+            "nodes": 3,
+            "errors": 0
+          },
+          {
+            "frame": 951.3000000715256,
+            "total": 1941.622,
+            "nodes": 3,
+            "errors": 0
+          },
+          {
+            "frame": 920.5,
+            "total": 1913.2410000000002,
+            "nodes": 3,
+            "errors": 0
+          }
+        ]
+      }
+    },
+    "d3": {
+      "scatter-1000": {
+        "frame": 10.3,
+        "total": 11.6,
+        "nodes": 1073,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 11.599999904632568,
+            "total": 13.039,
+            "nodes": 1073,
+            "errors": 0
+          },
+          {
+            "frame": 9.599999904632568,
+            "total": 10.895999999999999,
+            "nodes": 1073,
+            "errors": 0
+          },
+          {
+            "frame": 10.300000071525574,
+            "total": 11.276,
+            "nodes": 1073,
+            "errors": 0
+          },
+          {
+            "frame": 10.299999952316284,
+            "total": 11.611,
+            "nodes": 1073,
+            "errors": 0
+          },
+          {
+            "frame": 10.5,
+            "total": 12.099,
+            "nodes": 1073,
+            "errors": 0
+          }
+        ]
+      },
+      "scatter-10000": {
+        "frame": 34.5,
+        "total": 36.6,
+        "nodes": 10073,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 37.200000047683716,
+            "total": 39.804,
+            "nodes": 10073,
+            "errors": 0
+          },
+          {
+            "frame": 34.5,
+            "total": 36.641999999999996,
+            "nodes": 10073,
+            "errors": 0
+          },
+          {
+            "frame": 34.300000071525574,
+            "total": 36.552,
+            "nodes": 10073,
+            "errors": 0
+          },
+          {
+            "frame": 35,
+            "total": 37.568000000000005,
+            "nodes": 10073,
+            "errors": 0
+          },
+          {
+            "frame": 33.699999928474426,
+            "total": 36.067,
+            "nodes": 10073,
+            "errors": 0
+          }
+        ]
+      },
+      "line-1000": {
+        "frame": 7.8,
+        "total": 9.4,
+        "nodes": 64,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 7.600000023841858,
+            "total": 9.405,
+            "nodes": 64,
+            "errors": 0
+          },
+          {
+            "frame": 9.200000047683716,
+            "total": 10.992,
+            "nodes": 64,
+            "errors": 0
+          },
+          {
+            "frame": 8.200000047683716,
+            "total": 9.481,
+            "nodes": 64,
+            "errors": 0
+          },
+          {
+            "frame": 7.800000071525574,
+            "total": 9.368,
+            "nodes": 64,
+            "errors": 0
+          },
+          {
+            "frame": 7.299999952316284,
+            "total": 8.529,
+            "nodes": 64,
+            "errors": 0
+          }
+        ]
+      },
+      "line-100000": {
+        "frame": 40.6,
+        "total": 50.4,
+        "nodes": 64,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 41.90000009536743,
+            "total": 51.57,
+            "nodes": 64,
+            "errors": 0
+          },
+          {
+            "frame": 41.300000071525574,
+            "total": 51.444,
+            "nodes": 64,
+            "errors": 0
+          },
+          {
+            "frame": 40.60000002384186,
+            "total": 50.003,
+            "nodes": 64,
+            "errors": 0
+          },
+          {
+            "frame": 40.60000002384186,
+            "total": 50.42099999999999,
+            "nodes": 64,
+            "errors": 0
+          },
+          {
+            "frame": 39.800000071525574,
+            "total": 49.556000000000004,
+            "nodes": 64,
+            "errors": 0
+          }
+        ]
+      }
+    },
+    "echarts": {
+      "scatter-1000": {
+        "frame": 44.2,
+        "total": 263.3,
+        "nodes": 4,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 73.79999995231628,
+            "total": 298.776,
+            "nodes": 4,
+            "errors": 0
+          },
+          {
+            "frame": 44.199999928474426,
+            "total": 273.847,
+            "nodes": 4,
+            "errors": 0
+          },
+          {
+            "frame": 42.699999928474426,
+            "total": 263.26,
+            "nodes": 4,
+            "errors": 0
+          },
+          {
+            "frame": 46.199999928474426,
+            "total": 261.195,
+            "nodes": 4,
+            "errors": 0
+          },
+          {
+            "frame": 42.39999997615814,
+            "total": 240.74200000000002,
+            "nodes": 4,
+            "errors": 0
+          }
+        ]
+      },
+      "scatter-10000": {
+        "frame": 38.1,
+        "total": 187.4,
+        "nodes": 5,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 37.60000002384186,
+            "total": 186.273,
+            "nodes": 5,
+            "errors": 0
+          },
+          {
+            "frame": 37.799999952316284,
+            "total": 185.42,
+            "nodes": 5,
+            "errors": 0
+          },
+          {
+            "frame": 38.10000002384186,
+            "total": 187.422,
+            "nodes": 5,
+            "errors": 0
+          },
+          {
+            "frame": 40.799999952316284,
+            "total": 248.451,
+            "nodes": 5,
+            "errors": 0
+          },
+          {
+            "frame": 38.89999997615814,
+            "total": 200.239,
+            "nodes": 5,
+            "errors": 0
+          }
+        ]
+      },
+      "line-1000": {
+        "frame": 27.6,
+        "total": 155.4,
+        "nodes": 4,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 27.399999976158142,
+            "total": 154.621,
+            "nodes": 4,
+            "errors": 0
+          },
+          {
+            "frame": 33.10000002384186,
+            "total": 152.384,
+            "nodes": 4,
+            "errors": 0
+          },
+          {
+            "frame": 29.100000023841858,
+            "total": 156.845,
+            "nodes": 4,
+            "errors": 0
+          },
+          {
+            "frame": 27.5,
+            "total": 156.68699999999998,
+            "nodes": 4,
+            "errors": 0
+          },
+          {
+            "frame": 27.600000023841858,
+            "total": 155.354,
+            "nodes": 4,
+            "errors": 0
+          }
+        ]
+      },
+      "line-100000": {
+        "frame": 150,
+        "total": 173.8,
+        "nodes": 4,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 150,
+            "total": 173.775,
+            "nodes": 4,
+            "errors": 0
+          },
+          {
+            "frame": 195.19999992847443,
+            "total": 215.68400000000003,
+            "nodes": 4,
+            "errors": 0
+          },
+          {
+            "frame": 141.5,
+            "total": 163.42499999999998,
+            "nodes": 4,
+            "errors": 0
+          },
+          {
+            "frame": 186.89999997615814,
+            "total": 211.315,
+            "nodes": 4,
+            "errors": 0
+          },
+          {
+            "frame": 143.30000007152557,
+            "total": 162.211,
+            "nodes": 4,
+            "errors": 0
+          }
+        ]
+      }
+    },
+    "g2": {
+      "scatter-1000": {
+        "frame": 85.9,
+        "total": 325.5,
+        "nodes": 2,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 92,
+            "total": 334.77599999999995,
+            "nodes": 2,
+            "errors": 0
+          },
+          {
+            "frame": 85.89999997615814,
+            "total": 325.505,
+            "nodes": 2,
+            "errors": 0
+          },
+          {
+            "frame": 79.89999997615814,
+            "total": 301.4,
+            "nodes": 2,
+            "errors": 0
+          },
+          {
+            "frame": 80.60000002384186,
+            "total": 317.30600000000004,
+            "nodes": 2,
+            "errors": 0
+          },
+          {
+            "frame": 92.70000004768372,
+            "total": 327.538,
+            "nodes": 2,
+            "errors": 0
+          }
+        ]
+      },
+      "scatter-10000": {
+        "frame": 409.7,
+        "total": 2413.8,
+        "nodes": 2,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 405.8000000715256,
+            "total": 2408.622,
+            "nodes": 2,
+            "errors": 0
+          },
+          {
+            "frame": 407,
+            "total": 2410.153,
+            "nodes": 2,
+            "errors": 0
+          },
+          {
+            "frame": 474.09999990463257,
+            "total": 2476.883,
+            "nodes": 2,
+            "errors": 0
+          },
+          {
+            "frame": 409.6999999284744,
+            "total": 2413.8339999999994,
+            "nodes": 2,
+            "errors": 0
+          },
+          {
+            "frame": 437,
+            "total": 2439.476,
+            "nodes": 2,
+            "errors": 0
+          }
+        ]
+      },
+      "line-1000": {
+        "frame": 38.4,
+        "total": 84.8,
+        "nodes": 2,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 39.10000002384186,
+            "total": 91.17999999999999,
+            "nodes": 2,
+            "errors": 0
+          },
+          {
+            "frame": 37.699999928474426,
+            "total": 75.37500000000001,
+            "nodes": 2,
+            "errors": 0
+          },
+          {
+            "frame": 38.39999997615814,
+            "total": 87.929,
+            "nodes": 2,
+            "errors": 0
+          },
+          {
+            "frame": 37.90000009536743,
+            "total": 84.583,
+            "nodes": 2,
+            "errors": 0
+          },
+          {
+            "frame": 39.09999990463257,
+            "total": 84.83,
+            "nodes": 2,
+            "errors": 0
+          }
+        ]
+      },
+      "line-100000": {
+        "frame": 253.4,
+        "total": 435.3,
+        "nodes": 2,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 261.90000009536743,
+            "total": 446.821,
+            "nodes": 2,
+            "errors": 0
+          },
+          {
+            "frame": 254.89999997615814,
+            "total": 435.318,
+            "nodes": 2,
+            "errors": 0
+          },
+          {
+            "frame": 253.39999997615814,
+            "total": 436.274,
+            "nodes": 2,
+            "errors": 0
+          },
+          {
+            "frame": 241.70000004768372,
+            "total": 415.738,
+            "nodes": 2,
+            "errors": 0
+          },
+          {
+            "frame": 248.89999997615814,
+            "total": 431.127,
+            "nodes": 2,
+            "errors": 0
+          }
+        ]
+      }
+    },
+    "highcharts": {
+      "scatter-1000": {
+        "frame": 33.4,
+        "total": 138.2,
+        "nodes": 1057,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 40.10000002384186,
+            "total": 143.80700000000002,
+            "nodes": 1057,
+            "errors": 0
+          },
+          {
+            "frame": 34,
+            "total": 128.18,
+            "nodes": 1057,
+            "errors": 0
+          },
+          {
+            "frame": 33.39999997615814,
+            "total": 124.863,
+            "nodes": 1057,
+            "errors": 0
+          },
+          {
+            "frame": 32.59999990463257,
+            "total": 138.18999999999997,
+            "nodes": 1057,
+            "errors": 0
+          },
+          {
+            "frame": 32.300000071525574,
+            "total": 150.821,
+            "nodes": 1057,
+            "errors": 0
+          }
+        ]
+      },
+      "scatter-10000": {
+        "frame": 108.4,
+        "total": 383.3,
+        "nodes": 10057,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 119.10000002384186,
+            "total": 418.628,
+            "nodes": 10057,
+            "errors": 0
+          },
+          {
+            "frame": 106.60000002384186,
+            "total": 654.287,
+            "nodes": 10057,
+            "errors": 0
+          },
+          {
+            "frame": 111.60000002384186,
+            "total": 383.281,
+            "nodes": 10057,
+            "errors": 0
+          },
+          {
+            "frame": 108.39999997615814,
+            "total": 375.60499999999996,
+            "nodes": 10057,
+            "errors": 0
+          },
+          {
+            "frame": 107.10000002384186,
+            "total": 367.41499999999996,
+            "nodes": 10057,
+            "errors": 0
+          }
+        ]
+      },
+      "line-1000": {
+        "frame": 25.7,
+        "total": 56.9,
+        "nodes": 57,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 26.299999952316284,
+            "total": 59.426,
+            "nodes": 57,
+            "errors": 0
+          },
+          {
+            "frame": 25.5,
+            "total": 58.11300000000001,
+            "nodes": 57,
+            "errors": 0
+          },
+          {
+            "frame": 25.100000023841858,
+            "total": 55.117,
+            "nodes": 57,
+            "errors": 0
+          },
+          {
+            "frame": 25.899999976158142,
+            "total": 56.687000000000005,
+            "nodes": 57,
+            "errors": 0
+          },
+          {
+            "frame": 25.700000047683716,
+            "total": 56.86899999999999,
+            "nodes": 57,
+            "errors": 0
+          }
+        ]
+      },
+      "line-100000": {
+        "frame": 175.5,
+        "total": 839,
+        "nodes": 61,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 173.89999997615814,
+            "total": 833.781,
+            "nodes": 61,
+            "errors": 0
+          },
+          {
+            "frame": 175.10000002384186,
+            "total": 838.996,
+            "nodes": 61,
+            "errors": 0
+          },
+          {
+            "frame": 175.5,
+            "total": 817.5169999999999,
+            "nodes": 61,
+            "errors": 0
+          },
+          {
+            "frame": 184.39999997615814,
+            "total": 904.069,
+            "nodes": 61,
+            "errors": 0
+          },
+          {
+            "frame": 179.30000007152557,
+            "total": 916.125,
+            "nodes": 61,
+            "errors": 0
+          }
+        ]
+      }
+    },
+    "plot": {
+      "scatter-1000": {
+        "frame": 13.1,
+        "total": 14.7,
+        "nodes": 1046,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 17.600000023841858,
+            "total": 19.131000000000004,
+            "nodes": 1046,
+            "errors": 0
+          },
+          {
+            "frame": 14,
+            "total": 15.238000000000001,
+            "nodes": 1046,
+            "errors": 0
+          },
+          {
+            "frame": 13.100000023841858,
+            "total": 14.482,
+            "nodes": 1046,
+            "errors": 0
+          },
+          {
+            "frame": 13.100000023841858,
+            "total": 14.087,
+            "nodes": 1046,
+            "errors": 0
+          },
+          {
+            "frame": 13,
+            "total": 14.659,
+            "nodes": 1046,
+            "errors": 0
+          }
+        ]
+      },
+      "scatter-10000": {
+        "frame": 37.6,
+        "total": 40.2,
+        "nodes": 10046,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 43.699999928474426,
+            "total": 47.052,
+            "nodes": 10046,
+            "errors": 0
+          },
+          {
+            "frame": 37.299999952316284,
+            "total": 39.983,
+            "nodes": 10046,
+            "errors": 0
+          },
+          {
+            "frame": 38.5,
+            "total": 40.996,
+            "nodes": 10046,
+            "errors": 0
+          },
+          {
+            "frame": 37.200000047683716,
+            "total": 39.94,
+            "nodes": 10046,
+            "errors": 0
+          },
+          {
+            "frame": 37.60000002384186,
+            "total": 40.235,
+            "nodes": 10046,
+            "errors": 0
+          }
+        ]
+      },
+      "line-1000": {
+        "frame": 12,
+        "total": 13.1,
+        "nodes": 47,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 14,
+            "total": 15.321000000000002,
+            "nodes": 47,
+            "errors": 0
+          },
+          {
+            "frame": 12,
+            "total": 13.107,
+            "nodes": 47,
+            "errors": 0
+          },
+          {
+            "frame": 11.699999928474426,
+            "total": 12.773,
+            "nodes": 47,
+            "errors": 0
+          },
+          {
+            "frame": 12.899999976158142,
+            "total": 14.247000000000002,
+            "nodes": 47,
+            "errors": 0
+          },
+          {
+            "frame": 11.700000047683716,
+            "total": 12.749,
+            "nodes": 47,
+            "errors": 0
+          }
+        ]
+      },
+      "line-100000": {
+        "frame": 72.4,
+        "total": 86.4,
+        "nodes": 37,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 72.39999997615814,
+            "total": 86.369,
+            "nodes": 37,
+            "errors": 0
+          },
+          {
+            "frame": 85,
+            "total": 100.69699999999999,
+            "nodes": 37,
+            "errors": 0
+          },
+          {
+            "frame": 70.30000007152557,
+            "total": 86.243,
+            "nodes": 37,
+            "errors": 0
+          },
+          {
+            "frame": 71.79999995231628,
+            "total": 85.05799999999999,
+            "nodes": 37,
+            "errors": 0
+          },
+          {
+            "frame": 73.69999992847443,
+            "total": 90.804,
+            "nodes": 37,
+            "errors": 0
+          }
+        ]
+      }
+    },
+    "recharts": {
+      "scatter-1000": {
+        "frame": 116.2,
+        "total": 616.5,
+        "nodes": 3084,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 117.70000004768372,
+            "total": 591.538,
+            "nodes": 3084,
+            "errors": 0
+          },
+          {
+            "frame": 116.19999992847443,
+            "total": 595.609,
+            "nodes": 3084,
+            "errors": 0
+          },
+          {
+            "frame": 119.5,
+            "total": 616.454,
+            "nodes": 3084,
+            "errors": 0
+          },
+          {
+            "frame": 113.89999997615814,
+            "total": 616.977,
+            "nodes": 3084,
+            "errors": 0
+          },
+          {
+            "frame": 115.69999992847443,
+            "total": 626.906,
+            "nodes": 3084,
+            "errors": 0
+          }
+        ]
+      },
+      "scatter-10000": {
+        "frame": 862.3,
+        "total": 2031.3,
+        "nodes": 30084,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 912.5,
+            "total": 2027.199,
+            "nodes": 30084,
+            "errors": 0
+          },
+          {
+            "frame": 874.8999999761581,
+            "total": 2271.5029999999997,
+            "nodes": 30084,
+            "errors": 0
+          },
+          {
+            "frame": 862.2999999523163,
+            "total": 2083.252,
+            "nodes": 30084,
+            "errors": 0
+          },
+          {
+            "frame": 860.3000000715256,
+            "total": 2031.2749999999999,
+            "nodes": 30084,
+            "errors": 0
+          },
+          {
+            "frame": 857.1000000238419,
+            "total": 1985.195,
+            "nodes": 30084,
+            "errors": 0
+          }
+        ]
+      },
+      "line-1000": {
+        "frame": 37.7,
+        "total": 289.8,
+        "nodes": 84,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 38,
+            "total": 272.41700000000003,
+            "nodes": 84,
+            "errors": 0
+          },
+          {
+            "frame": 38.699999928474426,
+            "total": 298.44399999999996,
+            "nodes": 84,
+            "errors": 0
+          },
+          {
+            "frame": 37.200000047683716,
+            "total": 242.947,
+            "nodes": 84,
+            "errors": 0
+          },
+          {
+            "frame": 37.59999990463257,
+            "total": 289.84000000000003,
+            "nodes": 84,
+            "errors": 0
+          },
+          {
+            "frame": 37.699999928474426,
+            "total": 299.284,
+            "nodes": 84,
+            "errors": 0
+          }
+        ]
+      },
+      "line-100000": {
+        "frame": 576.3,
+        "total": 2221.1,
+        "nodes": 84,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 585.8000000715256,
+            "total": 2313.81,
+            "nodes": 84,
+            "errors": 0
+          },
+          {
+            "frame": 576.3000000715256,
+            "total": 2245.921,
+            "nodes": 84,
+            "errors": 0
+          },
+          {
+            "frame": 573.2000000476837,
+            "total": 2167.221,
+            "nodes": 84,
+            "errors": 0
+          },
+          {
+            "frame": 574.6999999284744,
+            "total": 2124.303,
+            "nodes": 84,
+            "errors": 0
+          },
+          {
+            "frame": 576.3000000715256,
+            "total": 2221.0589999999997,
+            "nodes": 84,
+            "errors": 0
+          }
+        ]
+      }
+    },
+    "rhp-web": {
+      "scatter-1000": {
+        "frame": 52.5,
+        "total": 54,
+        "nodes": 2034,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 66.39999997615814,
+            "total": 68.108,
+            "nodes": 2034,
+            "errors": 0
+          },
+          {
+            "frame": 61.700000047683716,
+            "total": 63.46,
+            "nodes": 2034,
+            "errors": 0
+          },
+          {
+            "frame": 51.89999997615814,
+            "total": 53.220000000000006,
+            "nodes": 2034,
+            "errors": 0
+          },
+          {
+            "frame": 50.5,
+            "total": 51.889,
+            "nodes": 2034,
+            "errors": 0
+          },
+          {
+            "frame": 52.5,
+            "total": 54.019999999999996,
+            "nodes": 2034,
+            "errors": 0
+          }
+        ]
+      },
+      "scatter-10000": {
+        "frame": 424.6,
+        "total": 431.2,
+        "nodes": 20034,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 452.60000002384186,
+            "total": 459.957,
+            "nodes": 20034,
+            "errors": 0
+          },
+          {
+            "frame": 409.6999999284744,
+            "total": 416.39500000000004,
+            "nodes": 20034,
+            "errors": 0
+          },
+          {
+            "frame": 419.39999997615814,
+            "total": 426.64599999999996,
+            "nodes": 20034,
+            "errors": 0
+          },
+          {
+            "frame": 429,
+            "total": 436.665,
+            "nodes": 20034,
+            "errors": 0
+          },
+          {
+            "frame": 424.60000002384186,
+            "total": 431.16,
+            "nodes": 20034,
+            "errors": 0
+          }
+        ]
+      },
+      "line-1000": {
+        "frame": 16.9,
+        "total": 18.6,
+        "nodes": 34,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 18.09999990463257,
+            "total": 19.499,
+            "nodes": 34,
+            "errors": 0
+          },
+          {
+            "frame": 16.600000023841858,
+            "total": 18.222,
+            "nodes": 34,
+            "errors": 0
+          },
+          {
+            "frame": 16.90000009536743,
+            "total": 18.569,
+            "nodes": 34,
+            "errors": 0
+          },
+          {
+            "frame": 16.699999928474426,
+            "total": 18.284000000000002,
+            "nodes": 34,
+            "errors": 0
+          },
+          {
+            "frame": 20.299999952316284,
+            "total": 21.88,
+            "nodes": 34,
+            "errors": 0
+          }
+        ]
+      },
+      "line-100000": {
+        "frame": 95.2,
+        "total": 115.2,
+        "nodes": 34,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 95.5,
+            "total": 113.636,
+            "nodes": 34,
+            "errors": 0
+          },
+          {
+            "frame": 95.19999992847443,
+            "total": 117.59599999999999,
+            "nodes": 34,
+            "errors": 0
+          },
+          {
+            "frame": 92.39999997615814,
+            "total": 111.872,
+            "nodes": 34,
+            "errors": 0
+          },
+          {
+            "frame": 94.5,
+            "total": 115.19900000000001,
+            "nodes": 34,
+            "errors": 0
+          },
+          {
+            "frame": 96.89999997615814,
+            "total": 119.589,
+            "nodes": 34,
+            "errors": 0
+          }
+        ]
+      }
+    },
+    "rhp": {
+      "scatter-1000": {
+        "frame": 33.8,
+        "total": 35.2,
+        "nodes": 1031,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 33.799999952316284,
+            "total": 35.239,
+            "nodes": 1031,
+            "errors": 0
+          },
+          {
+            "frame": 33.5,
+            "total": 34.671,
+            "nodes": 1031,
+            "errors": 0
+          },
+          {
+            "frame": 36.89999997615814,
+            "total": 38.575,
+            "nodes": 1031,
+            "errors": 0
+          },
+          {
+            "frame": 34.299999952316284,
+            "total": 35.629,
+            "nodes": 1031,
+            "errors": 0
+          },
+          {
+            "frame": 33.200000047683716,
+            "total": 34.478,
+            "nodes": 1031,
+            "errors": 0
+          }
+        ]
+      },
+      "scatter-10000": {
+        "frame": 241.9,
+        "total": 264.5,
+        "nodes": 10031,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 238.79999995231628,
+            "total": 260.332,
+            "nodes": 10031,
+            "errors": 0
+          },
+          {
+            "frame": 244.20000004768372,
+            "total": 265.511,
+            "nodes": 10031,
+            "errors": 0
+          },
+          {
+            "frame": 253.69999992847443,
+            "total": 278.978,
+            "nodes": 10031,
+            "errors": 0
+          },
+          {
+            "frame": 241,
+            "total": 262.663,
+            "nodes": 10031,
+            "errors": 0
+          },
+          {
+            "frame": 241.90000009536743,
+            "total": 264.46799999999996,
+            "nodes": 10031,
+            "errors": 0
+          }
+        ]
+      },
+      "line-1000": {
+        "frame": 13,
+        "total": 14.6,
+        "nodes": 30,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 14.100000023841858,
+            "total": 15.450000000000001,
+            "nodes": 30,
+            "errors": 0
+          },
+          {
+            "frame": 12.899999976158142,
+            "total": 14.307,
+            "nodes": 30,
+            "errors": 0
+          },
+          {
+            "frame": 13.300000071525574,
+            "total": 14.751999999999999,
+            "nodes": 30,
+            "errors": 0
+          },
+          {
+            "frame": 12.900000095367432,
+            "total": 14.445,
+            "nodes": 30,
+            "errors": 0
+          },
+          {
+            "frame": 13,
+            "total": 14.572999999999999,
+            "nodes": 30,
+            "errors": 0
+          }
+        ]
+      },
+      "line-100000": {
+        "frame": 61.9,
+        "total": 83.7,
+        "nodes": 30,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 61.89999997615814,
+            "total": 84.151,
+            "nodes": 30,
+            "errors": 0
+          },
+          {
+            "frame": 64.39999997615814,
+            "total": 83.736,
+            "nodes": 30,
+            "errors": 0
+          },
+          {
+            "frame": 60.89999997615814,
+            "total": 83.21199999999999,
+            "nodes": 30,
+            "errors": 0
+          },
+          {
+            "frame": 61,
+            "total": 83.47399999999999,
+            "nodes": 30,
+            "errors": 0
+          },
+          {
+            "frame": 64.20000004768372,
+            "total": 86.802,
+            "nodes": 30,
+            "errors": 0
+          }
+        ]
+      }
+    },
+    "vegalite": {
+      "scatter-1000": {
+        "frame": 39.5,
+        "total": 41.2,
+        "nodes": 1112,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 43.09999990463257,
+            "total": 44.841,
+            "nodes": 1112,
+            "errors": 0
+          },
+          {
+            "frame": 38,
+            "total": 39.67,
+            "nodes": 1112,
+            "errors": 0
+          },
+          {
+            "frame": 39.5,
+            "total": 41.23,
+            "nodes": 1112,
+            "errors": 0
+          },
+          {
+            "frame": 38.39999997615814,
+            "total": 40.533,
+            "nodes": 1112,
+            "errors": 0
+          },
+          {
+            "frame": 40.59999990463257,
+            "total": 42.915,
+            "nodes": 1112,
+            "errors": 0
+          }
+        ]
+      },
+      "scatter-10000": {
+        "frame": 102.5,
+        "total": 104.2,
+        "nodes": 10112,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 104.69999992847443,
+            "total": 106.45400000000001,
+            "nodes": 10112,
+            "errors": 0
+          },
+          {
+            "frame": 102.79999995231628,
+            "total": 104.61200000000001,
+            "nodes": 10112,
+            "errors": 0
+          },
+          {
+            "frame": 102,
+            "total": 103.647,
+            "nodes": 10112,
+            "errors": 0
+          },
+          {
+            "frame": 102.5,
+            "total": 104.18900000000001,
+            "nodes": 10112,
+            "errors": 0
+          },
+          {
+            "frame": 100.10000002384186,
+            "total": 101.809,
+            "nodes": 10112,
+            "errors": 0
+          }
+        ]
+      },
+      "line-1000": {
+        "frame": 33.9,
+        "total": 35.4,
+        "nodes": 122,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 34.200000047683716,
+            "total": 35.542,
+            "nodes": 122,
+            "errors": 0
+          },
+          {
+            "frame": 37.60000002384186,
+            "total": 38.93299999999999,
+            "nodes": 122,
+            "errors": 0
+          },
+          {
+            "frame": 33.60000002384186,
+            "total": 34.761,
+            "nodes": 122,
+            "errors": 0
+          },
+          {
+            "frame": 33.89999997615814,
+            "total": 35.364,
+            "nodes": 122,
+            "errors": 0
+          },
+          {
+            "frame": 33.10000002384186,
+            "total": 34.13099999999999,
+            "nodes": 122,
+            "errors": 0
+          }
+        ]
+      },
+      "line-100000": {
+        "frame": 179.1,
+        "total": 221.9,
+        "nodes": 107,
+        "errors": 0,
+        "idleGate": null,
+        "samples": [
+          {
+            "frame": 183,
+            "total": 227.138,
+            "nodes": 107,
+            "errors": 0
+          },
+          {
+            "frame": 179.10000002384186,
+            "total": 212.10899999999998,
+            "nodes": 107,
+            "errors": 0
+          },
+          {
+            "frame": 181.39999997615814,
+            "total": 226.159,
+            "nodes": 107,
+            "errors": 0
+          },
+          {
+            "frame": 177,
+            "total": 220.73,
+            "nodes": 107,
+            "errors": 0
+          },
+          {
+            "frame": 177.70000004768372,
+            "total": 221.894,
+            "nodes": 107,
+            "errors": 0
+          }
+        ]
+      }
+    }
+  },
+  "completed": "2026-10-14T13:13:31.016Z",
+  "loadEnd": [
+    4.47607421875,
+    5.38134765625,
+    6.1728515625
+  ]
+}
