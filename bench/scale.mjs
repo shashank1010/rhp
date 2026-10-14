@@ -10,6 +10,7 @@ import os from "node:os";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
 import { transformAsync } from "@babel/core";
+import { oneSolid } from "../scripts/bundle.mjs";
 import { idleGate } from "./idle.mjs";
 const here = path.dirname(fileURLToPath(import.meta.url)), at = (f) => path.join(here, f);
 const inputs = process.env.BENCH_INPUTS ? path.resolve(process.env.BENCH_INPUTS) : here;
@@ -32,7 +33,8 @@ if (cmd === "build") {
     const entry = at(`out-scale/${name}.entry.js`);
     fs.writeFileSync(entry, `import lib from "../scale/${file(name)}";\nimport { install } from "../scale/harness.js";\ninstall(lib);\n`);
     await build({ entryPoints: [entry], outfile: at(`out-scale/${name}.js`), bundle: true, minify: true, format: "iife", platform: "browser", target: "es2020", jsx: "automatic",
-      plugins: [solid, css], define: { "process.env.NODE_ENV": '"production"' }, logLevel: "error", nodePaths: [at("node_modules"), at("../node_modules")] });
+      plugins: [solid, css, oneSolid(at(".."))], define: { "process.env.NODE_ENV": '"production"' }, logLevel: "error", nodePaths: [at("node_modules"), at("../node_modules")],
+      alias: { "@bezda/rhp": at("../src/index.js") } }); // web/src (the rhp-web adapter) imports @bezda/rhp: rhp from this repo
     fs.writeFileSync(at(`out-scale/${name}.html`), `<!doctype html><html><head><meta charset="utf-8"><title>${name}</title></head><body style="margin:0"><script src="${name}.js"></script></body></html>`);
     console.log("built", name);
   }
